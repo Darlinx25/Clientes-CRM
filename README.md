@@ -301,14 +301,6 @@ Todas las dependencias directas e indirectas (Go modules y paquetes npm) son de 
 
 El detalle de las librerías principales y sus licencias está en [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
 
-### Checklist antes de publicar en Git
-
-1. **Secretos:** `.env` está en `.gitignore` (patrón `*.env`). Nunca subas `JWT_SECRET_KEY`, `SMTP_PASSWORD` ni `RESEND_API_KEY`. Solo se versiona `.env.example` con valores de ejemplo.
-2. **Datos reales de clientes:** `data/` (SQLite) y `photos/` están en `.gitignore` **desde esta versión**. Confirmá que no se suba `meerkat.db` ni fotos reales (los tests usan solamente datos de ejemplo).
-3. **Licencia:** mantener `LICENSE` con el copyright original de Frederic Buchner (ver más arriba).
-4. **Público vs. privado:** con MIT el repo puede ser público o privado indiferentemente; si elegís público, no incluyas tampoco información de clientes reales en fixtures, screenshots ni ejemplos — usá datos ficticios.
-5. **No versionar dependencias:** `node_modules/`, `frontend/build/`, `vendor/` están ignorados. El instalador las descarga al construir.
-
 ---
 
 ## Troubleshooting
