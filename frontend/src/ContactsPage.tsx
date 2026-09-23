@@ -2,11 +2,9 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useContacts } from './hooks/useContacts';
-import { getCircles } from './api/contacts';
 import { getCurrentUser } from './api/admin';
 import { resolveEnabledFields, ContactFieldKey } from './contactFields';
 import AddContactDialog from './components/AddContactDialog';
-import ImportContactsDialog from './components/ImportContactsDialog';
 import ExcelImportDialog from './components/ExcelImportDialog';
 import {
   Box,
@@ -27,7 +25,6 @@ import {
   InputAdornment,
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import FileUploadIcon from '@mui/icons-material/FileUpload';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -39,13 +36,10 @@ export default function ContactsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
-  const [selectedCircle, setSelectedCircle] = useState('');
-  const [circles, setCircles] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState(() => {
     return localStorage.getItem('contacts-sort-option') || 'id-desc';
   });
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [excelImportDialogOpen, setExcelImportDialogOpen] = useState(false);
   const [customFieldNames, setCustomFieldNames] = useState<string[]>([]);
   const [enabledFields, setEnabledFields] = useState<Set<ContactFieldKey>>(() => resolveEnabledFields(null));
@@ -102,44 +96,38 @@ export default function ContactsPage() {
     page,
     limit: pageSize,
     search: searchQuery,
-    circle: selectedCircle,
     sort: sortField,
     order: sortOrder,
     includeArchived: showArchived,
-  }), [page, searchQuery, selectedCircle, sortField, sortOrder, showArchived]);
+  }), [page, searchQuery, sortField, sortOrder, showArchived]);
 
   // Use custom hook for fetching contacts
   const { contacts, total: totalContacts, loading, refetch } = useContacts(contactParams);
 
-  // Fetch circles for filter and custom field names
+  // Fetch custom field names + enabled fields for the list
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [circlesData, user] = await Promise.all([
-          getCircles(),
-          getCurrentUser()
-        ]);
-        setCircles(Array.isArray(circlesData) ? circlesData : []);
+        const user = await getCurrentUser();
         setCustomFieldNames(user.custom_field_names ?? []);
         setEnabledFields(resolveEnabledFields(user.enabled_contact_fields));
       } catch (err) {
-        console.error('Error fetching circles or custom field names:', err);
+        console.error('Error fetching custom field names:', err);
       }
     };
     fetchData();
   }, []);
 
-  // Reset to page 1 when search or filter changes (but not on initial mount)
-  const prevFiltersRef = useRef({ searchQuery, selectedCircle });
+  // Reset to page 1 when search changes (but not on initial mount)
+  const prevFiltersRef = useRef({ searchQuery });
   useEffect(() => {
     const prev = prevFiltersRef.current;
-    if (prev.searchQuery !== searchQuery || prev.selectedCircle !== selectedCircle) {
+    if (prev.searchQuery !== searchQuery) {
       setPage(1);
-      prevFiltersRef.current = { searchQuery, selectedCircle };
+      prevFiltersRef.current = { searchQuery };
     }
-  }, [searchQuery, selectedCircle, setPage]);
+  }, [searchQuery, setPage]);
 
-  // Filter contacts by selected circle
   // With backend pagination, contacts are already filtered
   const filteredContacts = contacts;
 
@@ -149,13 +137,6 @@ export default function ContactsPage() {
 
   const handleImportComplete = async () => {
     await refetch();
-    // Also refresh circles
-    try {
-      const data = await getCircles();
-      setCircles(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching circles:', err);
-    }
   };
   
   return (
@@ -164,20 +145,6 @@ export default function ContactsPage() {
         {t('contacts.title')}
       </Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} mb={2} alignItems="center">
-        <FormControl sx={{ minWidth: 180 }} size="small">
-          <InputLabel id="circle-select-label">{t('contacts.filterByCircle')}</InputLabel>
-          <Select
-            labelId="circle-select-label"
-            value={selectedCircle}
-            label={t('contacts.filterByCircle')}
-            onChange={e => setSelectedCircle(e.target.value)}
-          >
-            <MenuItem value="">{t('contacts.allCircles')}</MenuItem>
-            {circles.map(circle => (
-              <MenuItem key={circle} value={circle}>{circle}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
         <FormControl sx={{ minWidth: 150 }} size="small">
           <InputLabel id="sort-select-label">{t('contacts.sortBy')}</InputLabel>
           <Select
@@ -206,19 +173,11 @@ export default function ContactsPage() {
         />
         <Button
           variant="outlined"
-          startIcon={<FileUploadIcon />}
-          onClick={() => setImportDialogOpen(true)}
-          sx={{ whiteSpace: 'nowrap' }}
-        >
-          {t('contacts.import.button', 'Import')}
-        </Button>
-        <Button
-          variant="outlined"
           startIcon={<GridOnIcon />}
           onClick={() => setExcelImportDialogOpen(true)}
           sx={{ whiteSpace: 'nowrap' }}
         >
-          {t('contacts.importExcel.button', 'Excel')}
+          {t('contacts.importExcel.button', 'Importar')}
         </Button>
         <Button
           variant="outlined"
@@ -303,8 +262,6 @@ export default function ContactsPage() {
                         label={circle}
                         size="small"
                         variant="outlined"
-                        clickable
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedCircle(circle); setPage(1); }}
                         sx={{ height: 20, fontSize: '0.75rem' }}
                       />
                     ))}
@@ -330,14 +287,8 @@ export default function ContactsPage() {
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
         onContactAdded={handleContactAdded}
-        availableCircles={circles}
         customFieldNames={customFieldNames}
         enabledFields={enabledFields}
-      />
-      <ImportContactsDialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        onImportComplete={handleImportComplete}
       />
       <ExcelImportDialog
         open={excelImportDialogOpen}

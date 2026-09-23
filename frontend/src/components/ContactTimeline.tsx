@@ -17,6 +17,7 @@ import NoteIcon from '@mui/icons-material/Note';
 import EditIcon from '@mui/icons-material/Edit';
 import { Note } from '../api/notes';
 import { useDateFormat } from '../DateFormatProvider';
+import NoteEditedInfo from './NoteEditedInfo';
 
 interface ContactTimelineProps {
   notes: Note[];
@@ -95,6 +96,7 @@ export default function ContactTimeline({ notes, onEditNote }: ContactTimelinePr
                 <Typography variant="body2" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
                   {note.content}
                 </Typography>
+                <NoteEditedInfo note={note} />
               </Paper>
             </TimelineContent>
           </TimelineItem>

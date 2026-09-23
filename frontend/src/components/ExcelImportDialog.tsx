@@ -34,6 +34,8 @@ const REQUIRED_COLUMNS = [
   'Número de Empresa',
 ];
 
+const OPTIONAL_COLUMNS = ['Aniversario', 'Comentario', 'Aportación'];
+
 interface ExcelImportDialogProps {
   open: boolean;
   onClose: () => void;
@@ -138,8 +140,16 @@ export default function ExcelImportDialog({
           'El archivo debe tener una fila de encabezados con las siguientes columnas (el orden no importa):'
         )}
       </Alert>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
         {REQUIRED_COLUMNS.map((col) => (
+          <Chip key={col} label={col} size="small" variant="filled" />
+        ))}
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        {t('contacts.importExcel.optionalColumns', 'Columnas opcionales:')}
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+        {OPTIONAL_COLUMNS.map((col) => (
           <Chip key={col} label={col} size="small" variant="outlined" />
         ))}
       </Box>

@@ -25,6 +25,7 @@ import { useNotes } from './hooks/useNotes';
 import { useDebouncedValue } from './hooks/useDebounce';
 import { createUnassignedNote, Note } from './api/notes';
 import AddNoteDialog from './components/AddNoteDialog';
+import NoteEditedInfo from './components/NoteEditedInfo';
 import { handleError } from './utils/errorHandler';
 import { useDateFormat } from './DateFormatProvider';
 
@@ -191,6 +192,7 @@ const TimelinePage: React.FC = () => {
                         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                           {note.content}
                         </Typography>
+                        <NoteEditedInfo note={note} />
                         {contactName && (
                           <Box sx={{ mt: 1 }}>
                             <Link

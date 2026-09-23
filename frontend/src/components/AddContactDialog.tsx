@@ -21,7 +21,6 @@ interface AddContactDialogProps {
   open: boolean;
   onClose: () => void;
   onContactAdded: (contactId: number) => void;
-  availableCircles: string[];
   customFieldNames?: string[];
   enabledFields?: Set<ContactFieldKey>;
 }

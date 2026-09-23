@@ -22,4 +22,17 @@ type Note struct {
 	// AuthorName is the username of the user who created the note.
 	// Not persisted (UserID is); filled at read time for display.
 	AuthorName string `gorm:"-" json:"author_name"`
+
+	// OriginalTitle/OriginalContent keep the note's first-saved version so the
+	// UI can show an "edited" state with the edit date and let the user view
+	// the original. Set once on creation and never touched by updates.
+	OriginalTitle   string `gorm:"type:text" json:"original_title"`
+	OriginalContent string `gorm:"type:text" json:"original_content"`
+}
+
+// BeforeCreate snapshots the note's first-saved title/content as the original.
+func (n *Note) BeforeCreate(tx *gorm.DB) error {
+	n.OriginalTitle = n.Title
+	n.OriginalContent = n.Content
+	return nil
 }

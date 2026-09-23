@@ -82,13 +82,8 @@
   "contacts": {
     "title": "Clientes",
     "search": "Buscar Clientes",
-    "filterByCircle": "Filtrar por Círculo",
-    "allCircles": "Todos los Círculos",
-    "filteredMessage": "{{count}} de {{total}} clientes en '{{circle}}'",
     "filteredBySearch": "{{count}} clientes que coinciden con '{{search}}'",
-    "filteredBySearchAndCircle": "{{count}} clientes que coinciden con '{{search}}' en '{{circle}}'",
     "totalContacts": "{{count}} clientes",
-    "resetFilter": "Restablecer Filtro",
     "noContacts": "No se encontraron clientes",
     "addContact": "Agregar Cliente",
     "firstname": "Nombre",
@@ -133,53 +128,17 @@
     "archived": "Archivado",
     "import": {
       "button": "Importar",
-      "title": "Importar Clientes",
-      "upload": {
-        "title": "Subir Archivo de Clientes",
-        "description": "Selecciona un archivo CSV o VCF con tus clientes. Un archivo CSV debe tener encabezados en la primera fila.",
-        "dragDrop": "Arrastra y suelta un archivo CSV aquí, o haz clic para seleccionar",
-        "maxSize": "Tamaño máximo del archivo: 5MB",
-        "uploading": "Subiendo..."
-      },
-      "mapping": {
-        "title": "Mapear Columnas",
-        "description": "Asocia las columnas de tu CSV con los campos de cliente. Las columnas marcadas como 'Ignorar' no se importarán.",
-        "csvColumn": "Columna CSV",
-        "mapsTo": "Se asigna a",
-        "sampleData": "Muestra",
-        "ignore": "-- Ignorar --",
-        "duplicateWarning": "Estos campos de valor único están asignados a más de una columna; solo se usará la última columna: {{fields}}",
-        "duplicateField": "Asignado más de una vez"
-      },
-      "steps": {
-        "upload": "Subir",
-        "mapColumns": "Mapear Columnas",
-        "review": "Revisar",
-        "done": "Listo"
-      },
       "preview": {
-        "title": "Revisar Importación",
-        "description": "Revisa los clientes a importar. Resuelve los duplicados antes de continuar.",
-        "row": "Fila",
         "status": "Estado",
         "action": "Acción",
         "valid": "Válido",
         "duplicate": "Duplicado encontrado",
         "duplicateStatus": "Duplicado",
         "duplicateOf": "Coincide con: {{name}} ({{reason}})",
-        "matchReason": {
-          "email": "correo electrónico",
-          "name": "nombre",
-          "phone": "teléfono",
-          "vcard_uid": "misma vCard"
-        },
-        "restoreStatus": "Cliente eliminado",
-        "restoreOf": "Eliminado previamente: {{name}}. La importación lo restaurará.",
         "error": "Error",
         "actionSkip": "Omitir",
         "actionAdd": "Agregar como Nuevo",
         "actionUpdate": "Actualizar Existente",
-        "actionRestore": "Restaurar Cliente Eliminado",
         "toCreate": "{{count}} para crear",
         "toUpdate": "{{count}} para actualizar",
         "toSkip": "{{count}} para omitir",
@@ -205,10 +164,11 @@
       }
     },
     "importExcel": {
-      "button": "Excel",
+      "button": "Importar",
       "title": "Cargar clientes desde Excel",
       "instructions": "El archivo debe tener una fila de encabezados con las siguientes columnas (el orden no importa):",
-      "dedupInfo": "Los clientes se agrupan por RUT: si el mismo RUT aparece en varias filas con distinto tipo o número de empresa, se guarda un solo cliente con todas sus empresas.",
+      "optionalColumns": "Columnas opcionales:",
+      "dedupInfo": "Los clientes se agrupan por RUT: si el mismo RUT aparece en varias filas con distinto tipo o número de empresa, se guarda un solo cliente con todas sus empresas. En Email y Celular puedes escribir varios valores separados por coma, punto y coma o barra (ej: a@x.cl; b@y.cl).",
       "upload": {
         "dragDrop": "Arrastre un archivo Excel aquí, o haga clic para seleccionar",
         "supportedFormats": "Formatos soportados: .xlsx (Excel)",
@@ -330,7 +290,17 @@
     "archive": "Archivar",
     "unarchive": "Desarchivar",
     "archivedBadge": "Archivado",
-    "archiveConfirmation": "¿Estás seguro de que quieres archivar este cliente? Todos los recordatorios serán eliminados. Puedes desarchivarlo más tarde, pero los recordatorios no se restaurarán."
+    "archiveTitle": "Archivar cliente",
+    "archiveConfirmation": "¿Estás seguro de que quieres archivar este cliente? Lo podrás desarchivar más tarde cuando quieras.",
+    "viewDeletedNotes": "Ver eliminadas",
+    "deletedNotes": "Notas eliminadas",
+    "noDeletedNotes": "No hay notas eliminadas",
+    "deletedAt": "Eliminada"
+  },
+  "noteEdited": {
+    "edited": "Editada",
+    "viewOriginal": "Ver original",
+    "hideOriginal": "Ocultar original"
   },
   "noteDialog": {
     "title": "Agregar Nota",

@@ -9,6 +9,9 @@ export interface Note {
   contact_id?: number;
   CreatedAt: string;
   UpdatedAt: string;
+  original_title?: string;
+  original_content?: string;
+  deleted_at?: string | null;
   author_name?: string;
   contact?: {
     ID: number;
@@ -52,6 +55,22 @@ export async function getContactNotes(
 ): Promise<NotesResponse> {
   const response = await apiFetch(
     `${API_BASE_URL}/contacts/${contactId}/notes`,
+    { headers: getAuthHeaders() }
+  );
+
+  if (!response.ok) {
+    throw await parseErrorResponse(response);
+  }
+
+  return response.json();
+}
+
+// Get soft-deleted notes for a contact (discreet "ver eliminadas" view)
+export async function getDeletedContactNotes(
+  contactId: string | number
+): Promise<NotesResponse> {
+  const response = await apiFetch(
+    `${API_BASE_URL}/contacts/${contactId}/notes?deleted=true`,
     { headers: getAuthHeaders() }
   );
 

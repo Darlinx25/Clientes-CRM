@@ -50,8 +50,9 @@ func TestGetContactNotes(t *testing.T) {
 
 	// Assert that the notes returned belong to the contact
 	assert.Len(t, responseBody.Notes, 2)
-	assert.Equal(t, note1.Content, responseBody.Notes[0].Content)
-	assert.Equal(t, note2.Content, responseBody.Notes[1].Content)
+	// Notes are ordered by date DESC, id DESC, so the later note comes first.
+	assert.Equal(t, note2.Content, responseBody.Notes[0].Content)
+	assert.Equal(t, note1.Content, responseBody.Notes[1].Content)
 }
 
 func TestCreateContactNote(t *testing.T) {

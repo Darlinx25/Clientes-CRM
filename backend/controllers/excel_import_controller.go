@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
@@ -17,13 +18,16 @@ import (
 )
 
 const (
-	excelColumnCliente    = "Client"
-	excelColumnTipo       = "CompanyType"
-	excelColumnPersona    = "ContactPerson"
-	excelColumnEmail      = "Email"
-	excelColumnCelular    = "Phone"
-	excelColumnRUT        = "Rut"
-	excelColumnNumEmpresa = "CompanyNumber"
+	excelColumnCliente     = "Client"
+	excelColumnTipo        = "CompanyType"
+	excelColumnPersona     = "ContactPerson"
+	excelColumnEmail       = "Email"
+	excelColumnCelular     = "Phone"
+	excelColumnRUT         = "Rut"
+	excelColumnNumEmpresa  = "CompanyNumber"
+	excelColumnAniversario = "Anniversary"
+	excelColumnComentario  = "ContactInformation"
+	excelColumnAportacion  = "Aportacion"
 )
 
 // ExcelImportResult summarizes the outcome of a bulk Excel import
@@ -46,23 +50,34 @@ type excelRow struct {
 	celular         string
 	rut             string
 	numeroEmpresa   string
+	aniversario     string
+	comentario      string
+	aportacion      string
 }
 
 type excelHeaders struct {
-	cliente    int
-	tipo       int
-	persona    int
-	email      int
-	celular    int
-	rut        int
-	numEmpresa int
-	found      map[string]bool
+	cliente     int
+	tipo        int
+	persona     int
+	email       int
+	celular     int
+	rut         int
+	numEmpresa  int
+	aniversario int
+	comentario  int
+	aportacion  int
+	found       map[string]bool
 }
 
 // ImportExcelContacts processes an uploaded Excel file (.xlsx) for bulk client import.
 // Columns are matched by their header name (case-insensitive):
 //
 //	Cliente, Tipo de Empresa, Persona de Contacto, Email, Celular, RUT, Número de Empresa
+//
+// Aniversario, Comentario and Aportación are optional extra columns: when present
+// in the header they are imported per client (aniversario/comentario) or per
+// company (aportación). Email and Celular may hold several values separated by
+// comma, semicolon or pipe; each becomes a separate email/phone entry.
 //
 // Clients are deduplicated by RUT: multiple rows sharing the same RUT are merged into a
 // single client, a Número de Empresa per row is attached, and every Tipo de Empresa of
@@ -167,12 +182,18 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 	}
 
 	// Map normalized RUT -> accumulated client data
+	type companyAccumulator struct {
+		tipos      map[string]bool
+		aportacion string
+	}
 	type clientAccumulator struct {
 		cliente         string
 		personaContacto string
-		email           string
-		celular         string
-		companies       map[string]map[string]bool // company number -> set of type names
+		emails          []string
+		phones          []string
+		aniversario     string
+		comentario      string
+		companies       map[string]*companyAccumulator // company number -> aportacion + set of type names
 	}
 	clients := make(map[string]*clientAccumulator)
 	order := make([]string, 0)
@@ -199,7 +220,7 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 
 		acc, exists := clients[key]
 		if !exists {
-			acc = &clientAccumulator{companies: make(map[string]map[string]bool)}
+			acc = &clientAccumulator{companies: make(map[string]*companyAccumulator)}
 			clients[key] = acc
 			order = append(order, key)
 		}
@@ -211,20 +232,29 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 			acc.personaContacto = parsed.personaContacto
 		}
 		if parsed.email != "" {
-			acc.email = parsed.email
+			acc.emails = appendUnique(acc.emails, splitMultiValues(parsed.email))
 		}
 		if parsed.celular != "" {
-			acc.celular = parsed.celular
+			acc.phones = appendUnique(acc.phones, splitMultiValues(parsed.celular))
+		}
+		if n := normalizeExcelDate(parsed.aniversario); n != "" && acc.aniversario == "" {
+			acc.aniversario = n
+		}
+		if parsed.comentario != "" && acc.comentario == "" {
+			acc.comentario = trimMax(parsed.comentario, 1000)
 		}
 
 		if parsed.numeroEmpresa != "" {
-			tipos := acc.companies[parsed.numeroEmpresa]
-			if tipos == nil {
-				tipos = make(map[string]bool)
-				acc.companies[parsed.numeroEmpresa] = tipos
+			ca, ok := acc.companies[parsed.numeroEmpresa]
+			if !ok {
+				ca = &companyAccumulator{tipos: make(map[string]bool)}
+				acc.companies[parsed.numeroEmpresa] = ca
 			}
 			if parsed.tipoEmpresa != "" {
-				tipos[parsed.tipoEmpresa] = true
+				ca.tipos[parsed.tipoEmpresa] = true
+			}
+			if parsed.aportacion != "" && ca.aportacion == "" {
+				ca.aportacion = trimMax(parsed.aportacion, 100)
 			}
 		}
 	}
@@ -260,27 +290,35 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 
 			if isNew {
 				contact = models.Contact{
-					UserID:        userID,
-					Firstname:     acc.cliente,
-					Rut:           normRUT,
-					ContactPerson: acc.personaContacto,
+					UserID:             userID,
+					Firstname:          acc.cliente,
+					Rut:                normRUT,
+					ContactPerson:      acc.personaContacto,
+					Anniversary:        acc.aniversario,
+					ContactInformation: acc.comentario,
 				}
-				if acc.email != "" {
-					contact.Emails = []models.ContactEmail{{Type: "home", Value: acc.email}}
+				if len(acc.emails) > 0 {
+					contact.Emails = make([]models.ContactEmail, 0, len(acc.emails))
+					for _, v := range acc.emails {
+						contact.Emails = append(contact.Emails, models.ContactEmail{Type: "home", Value: v})
+					}
 				}
-				if acc.celular != "" {
-					contact.Phones = []models.ContactPhone{{Type: "cell", Value: acc.celular}}
+				if len(acc.phones) > 0 {
+					contact.Phones = make([]models.ContactPhone, 0, len(acc.phones))
+					for _, v := range acc.phones {
+						contact.Phones = append(contact.Phones, models.ContactPhone{Type: "cell", Value: v})
+					}
 				}
 				if err := tx.Create(&contact).Error; err != nil {
 					return err
 				}
 				result.ContactsCreated++
-				for num, tipos := range acc.companies {
-					comp := models.Company{ContactID: contact.ID, CompanyNumber: num}
+				for num, ca := range acc.companies {
+					comp := models.Company{ContactID: contact.ID, CompanyNumber: num, Aportacion: ca.aportacion}
 					if err := tx.Create(&comp).Error; err != nil {
 						return err
 					}
-					tlist := resolveTypeEntities(typeByName, tipos)
+					tlist := resolveTypeEntities(typeByName, ca.tipos)
 					if len(tlist) > 0 {
 						if err := tx.Model(&comp).Association("Types").Replace(tlist); err != nil {
 							return err
@@ -294,12 +332,26 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 					contact.ContactPerson = acc.personaContacto
 					changed = true
 				}
-				if acc.email != "" && contact.Email != acc.email {
-					contact.Emails = []models.ContactEmail{{Type: "home", Value: acc.email}}
+				if acc.aniversario != "" && contact.Anniversary != acc.aniversario {
+					contact.Anniversary = acc.aniversario
 					changed = true
 				}
-				if acc.celular != "" && contact.Phone != acc.celular {
-					contact.Phones = []models.ContactPhone{{Type: "cell", Value: acc.celular}}
+				if acc.comentario != "" && contact.ContactInformation != acc.comentario {
+					contact.ContactInformation = acc.comentario
+					changed = true
+				}
+				if len(acc.emails) > 0 && contact.Email != acc.emails[0] {
+					contact.Emails = make([]models.ContactEmail, 0, len(acc.emails))
+					for _, v := range acc.emails {
+						contact.Emails = append(contact.Emails, models.ContactEmail{Type: "home", Value: v})
+					}
+					changed = true
+				}
+				if len(acc.phones) > 0 && contact.Phone != acc.phones[0] {
+					contact.Phones = make([]models.ContactPhone, 0, len(acc.phones))
+					for _, v := range acc.phones {
+						contact.Phones = append(contact.Phones, models.ContactPhone{Type: "cell", Value: v})
+					}
 					changed = true
 				}
 				if changed {
@@ -318,16 +370,22 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 				for i := range existing {
 					existingNums[strings.ToLower(strings.TrimSpace(existing[i].CompanyNumber))] = &existing[i]
 				}
-				for num, tipos := range acc.companies {
-					comp, exists := existingNums[strings.ToLower(strings.TrimSpace(num))]
+				for num, ca := range acc.companies {
+					normNum := strings.ToLower(strings.TrimSpace(num))
+					comp, exists := existingNums[normNum]
 					if !exists {
-						comp = &models.Company{ContactID: contact.ID, CompanyNumber: num}
+						comp = &models.Company{ContactID: contact.ID, CompanyNumber: num, Aportacion: ca.aportacion}
 						if err := tx.Create(comp).Error; err != nil {
 							return err
 						}
 						result.CompaniesAdded++
+					} else if ca.aportacion != "" && strings.ToLower(strings.TrimSpace(comp.Aportacion)) != strings.ToLower(strings.TrimSpace(ca.aportacion)) {
+						comp.Aportacion = ca.aportacion
+						if err := tx.Save(comp).Error; err != nil {
+							return err
+						}
 					}
-					tlist := resolveTypeEntities(typeByName, tipos)
+					tlist := resolveTypeEntities(typeByName, ca.tipos)
 					if len(tlist) > 0 {
 						if err := mergeCompanyTypes(tx, comp, tlist); err != nil {
 							return err
@@ -404,8 +462,17 @@ func parseExcelHeaders(headerRow []string) (*excelHeaders, error) {
 		"n de empresa":        excelColumnNumEmpresa,
 		"número":              excelColumnNumEmpresa,
 		"numero":              excelColumnNumEmpresa,
+		"aniversario":         excelColumnAniversario,
+		"fecha de inicio":     excelColumnAniversario,
+		"inicio":              excelColumnAniversario,
+		"comentario":          excelColumnComentario,
+		"comentarios":         excelColumnComentario,
+		"notas":               excelColumnComentario,
+		"observaciones":       excelColumnComentario,
+		"aportacion":          excelColumnAportacion,
+		"aportación":          excelColumnAportacion,
 	}
-	h := &excelHeaders{cliente: -1, tipo: -1, persona: -1, email: -1, celular: -1, rut: -1, numEmpresa: -1, found: map[string]bool{}}
+	h := &excelHeaders{cliente: -1, tipo: -1, persona: -1, email: -1, celular: -1, rut: -1, numEmpresa: -1, aniversario: -1, comentario: -1, aportacion: -1, found: map[string]bool{}}
 
 	for idx, cell := range headerRow {
 		normalized := normalizeHeader(cell)
@@ -441,6 +508,18 @@ func parseExcelHeaders(headerRow []string) (*excelHeaders, error) {
 			case excelColumnNumEmpresa:
 				if h.numEmpresa == -1 {
 					h.numEmpresa = idx
+				}
+			case excelColumnAniversario:
+				if h.aniversario == -1 {
+					h.aniversario = idx
+				}
+			case excelColumnComentario:
+				if h.comentario == -1 {
+					h.comentario = idx
+				}
+			case excelColumnAportacion:
+				if h.aportacion == -1 {
+					h.aportacion = idx
 				}
 			}
 			h.found[target] = true
@@ -487,6 +566,9 @@ func parseExcelRow(row []string, h *excelHeaders, lineNumber int) *excelRow {
 		celular:         cell(h.celular),
 		rut:             cell(h.rut),
 		numeroEmpresa:   cell(h.numEmpresa),
+		aniversario:     cell(h.aniversario),
+		comentario:      cell(h.comentario),
+		aportacion:      cell(h.aportacion),
 	}
 }
 
@@ -514,4 +596,79 @@ func normalizeRUT(rut string) string {
 	}
 	re := regexp.MustCompile(`[^0-9kK]`)
 	return re.ReplaceAllString(rut, "")
+}
+
+// splitMultiValues splits a cell holding several values ("a@x.cl; b@y.cl")
+// into trimmed, de-duplicated pieces. White space, comma, semicolon and pipe
+// are accepted as separators so pasted lists keep working.
+func splitMultiValues(s string) []string {
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == ';' || r == '|' || r == ',' || r == '\n' || r == '\r'
+	})
+	out := make([]string, 0, len(parts))
+	seen := make(map[string]bool, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" || seen[p] {
+			continue
+		}
+		seen[p] = true
+		out = append(out, p)
+	}
+	return out
+}
+
+// appendUnique appends vals to dst, keeping existing entries (order preserved).
+func appendUnique(dst []string, vals []string) []string {
+	seen := make(map[string]bool, len(dst)+len(vals))
+	for _, v := range dst {
+		seen[v] = true
+	}
+	for _, v := range vals {
+		if seen[v] {
+			continue
+		}
+		seen[v] = true
+		dst = append(dst, v)
+	}
+	return dst
+}
+
+// normalizeExcelDate converts the common date formats found in spreadsheets to
+// the yyyy-mm-dd string the app stores. Unparseable input returns "".
+func normalizeExcelDate(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	// Strict year-first formats first, then day-first.
+	layouts := []string{
+		"2006-01-02",
+		"2006-1-2",
+		"2006/01/02",
+		"2006.01.02",
+		"02/01/2006",
+		"2/1/2006",
+		"02.01.2006",
+		"2.1.2006",
+		"02-01-2006",
+		"2-1-2006",
+	}
+	for _, l := range layouts {
+		if ts, err := time.Parse(l, s); err == nil {
+			return ts.Format("2006-01-02")
+		}
+	}
+	return ""
+}
+
+// trimMax trims whitespace and caps the value at max runes (avoids cutting a
+// multi-byte character in half).
+func trimMax(s string, max int) string {
+	s = strings.TrimSpace(s)
+	r := []rune(s)
+	if len(r) > max {
+		return string(r[:max])
+	}
+	return s
 }

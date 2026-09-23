@@ -14,9 +14,10 @@ import {
 } from './api/contacts';
 import { getCurrentUser } from './api/admin';
 import { resolveEnabledFields, ContactFieldKey } from './contactFields';
-import { 
-  getContactNotes, 
-  Note 
+import {
+  getContactNotes,
+  getDeletedContactNotes,
+  Note
 } from './api/notes';
 import {
   Box,
@@ -24,7 +25,11 @@ import {
   CardContent,
   Divider,
   Button,
-  Typography
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { ContactDetailHeaderSkeleton, TimelineSkeleton } from './components/LoadingSkeletons';
 import NoteIcon from '@mui/icons-material/Note';
@@ -34,6 +39,7 @@ import ContactHeader from './components/ContactHeader';
 import ContactInformation from './components/ContactInformation';
 import ContactTimeline from './components/ContactTimeline';
 import ProfilePictureUploadDialog from './components/ProfilePictureUploadDialog';
+import DeletedNotesDialog from './components/DeletedNotesDialog';
 import { useContactDialogs } from './hooks/useContactDialogs';
 import { useTimelineEditing, } from './hooks/useTimelineEditing';
 import { useSnackbar } from './context/SnackbarContext';
@@ -70,6 +76,9 @@ export default function ContactDetailPage() {
   const [editValue, setEditValue] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
   const [notes, setNotes] = useState<Note[]>([]);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [deletedNotes, setDeletedNotes] = useState<Note[]>([]);
+  const [deletedNotesDialogOpen, setDeletedNotesDialogOpen] = useState(false);
   
   // Profile editing state
   const [editingProfile, setEditingProfile] = useState(false);
@@ -337,13 +346,14 @@ export default function ContactDetailPage() {
     }
   };
 
-  const handleArchiveContact = async () => {
+  const handleArchiveContact = () => {
     if (!contact || !id) return;
+    setArchiveDialogOpen(true);
+  };
 
-    const confirmMessage = t('contactDetail.archiveConfirmation');
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+  const handleConfirmArchive = async () => {
+    if (!contact || !id) return;
+    setArchiveDialogOpen(false);
 
     try {
       const updatedContact = await archiveContact(id);
@@ -355,6 +365,17 @@ export default function ContactDetailPage() {
       } else {
         showError(t('contactDetail.updateError'));
       }
+    }
+  };
+
+  const handleOpenDeletedNotes = async () => {
+    if (!id) return;
+    setDeletedNotesDialogOpen(true);
+    try {
+      const deletedData = await getDeletedContactNotes(id);
+      setDeletedNotes(deletedData.notes || []);
+    } catch (err) {
+      handleFetchError(err, 'loading deleted notes');
     }
   };
 
@@ -463,9 +484,22 @@ export default function ContactDetailPage() {
         {/* Timeline */}
         <Card sx={{ flex: 1 }}>
           <CardContent sx={{ py: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 1.5, gap: 0.5 }}>
-              <Button 
-                startIcon={<NoteIcon />} 
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, gap: 0.5 }}>
+              <Button
+                onClick={handleOpenDeletedNotes}
+                size="small"
+                sx={{
+                  p: 0,
+                  minWidth: 0,
+                  color: 'text.disabled',
+                  textTransform: 'none',
+                  fontSize: '0.75rem',
+                }}
+              >
+                {t('contactDetail.viewDeletedNotes')}
+              </Button>
+              <Button
+                startIcon={<NoteIcon />}
                 onClick={() => setNoteDialogOpen(true)}
                 variant="outlined"
                 size="small"
@@ -507,6 +541,34 @@ export default function ContactDetailPage() {
         open={profilePictureDialogOpen}
         onClose={() => setProfilePictureDialogOpen(false)}
         onUpload={handleUploadProfilePicture}
+      />
+
+      <Dialog
+        open={archiveDialogOpen}
+        onClose={() => setArchiveDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>{t('contactDetail.archiveTitle')}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            {t('contactDetail.archiveConfirmation')}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setArchiveDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="contained" color="error" onClick={handleConfirmArchive}>
+            {t('contactDetail.archive')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <DeletedNotesDialog
+        open={deletedNotesDialogOpen}
+        notes={deletedNotes}
+        onClose={() => setDeletedNotesDialogOpen(false)}
       />
     </Box>
   );

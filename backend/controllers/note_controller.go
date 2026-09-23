@@ -412,7 +412,8 @@ func DeleteNote(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Note deleted"})
 }
 
-// GetNotesForContact retrieves all notes for a given contact
+// GetNotesForContact retrieves all notes for a given contact.
+// Pass ?deleted=true to list soft-deleted notes (borradas) instead.
 func GetNotesForContact(c *gin.Context) {
 	// Get contact ID from the request URL
 	contactID := c.Param("id")
@@ -420,11 +421,14 @@ func GetNotesForContact(c *gin.Context) {
 	// Get the database instance from the context
 	db := c.MustGet("db").(*gorm.DB)
 
-	// Initialize a variable to store the contact
-	var contact models.Contact
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
 
-	// Fetch the contact and preload associated notes
-	if err := db.Preload("Notes").First(&contact, contactID).Error; err != nil {
+	// Verify the contact exists and belongs to this user
+	var contact models.Contact
+	if err := db.Where("user_id = ?", userID).First(&contact, contactID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// If no contact found, return a 404 error
 			apperrors.AbortWithError(c, apperrors.ErrNotFound("Contact").WithDetails("id", contactID))
@@ -435,9 +439,33 @@ func GetNotesForContact(c *gin.Context) {
 		return
 	}
 
-	// If successful, return the contact and its notes as JSON
-	fillNoteAuthors(c, contact.Notes)
+	// Listing soft-deleted notes lets the UI offer a discreet "ver eliminadas"
+	// view while the timeline itself only shows live notes.
+	if c.Query("deleted") == "true" {
+		var notes []models.Note
+		if err := db.Unscoped().
+			Where("user_id = ? AND contact_id = ? AND deleted_at IS NOT NULL", userID, contact.ID).
+			Order("date DESC, id DESC").
+			Find(&notes).Error; err != nil {
+			apperrors.AbortWithError(c, apperrors.ErrDatabase("Failed to retrieve deleted notes").WithError(err))
+			return
+		}
+		fillNoteAuthors(c, notes)
+		c.JSON(http.StatusOK, gin.H{"notes": notes})
+		return
+	}
+
+	var notes []models.Note
+	if err := db.Where("user_id = ? AND contact_id = ?", userID, contact.ID).
+		Order("date DESC, id DESC").
+		Find(&notes).Error; err != nil {
+		apperrors.AbortWithError(c, apperrors.ErrDatabase("Failed to retrieve notes").WithError(err))
+		return
+	}
+
+	// Fill each note's author for display
+	fillNoteAuthors(c, notes)
 	c.JSON(http.StatusOK, gin.H{
-		"notes": contact.Notes,
+		"notes": notes,
 	})
 }
