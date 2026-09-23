@@ -1,0 +1,330 @@
+package models
+
+import (
+	"encoding/json"
+	"time"
+)
+
+// ActivityInput represents the DTO for creating/updating activities
+type ActivityInput struct {
+	Title       string    `json:"title" validate:"required,min=1,max=200"`
+	Description string    `json:"description" validate:"max=2000"`
+	Location    string    `json:"location" validate:"max=300"`
+	Date        time.Time `json:"date" validate:"required"`
+	ContactIDs  []uint    `json:"contact_ids"` // Accept an array of contact IDs for many-to-many association
+}
+
+// CalendarSubscriptionInput is the DTO for creating/updating a calendar subscription.
+// Credentials are optional (public/unprotected calendars). On update, an empty
+// password keeps the stored one; set ClearPassword to remove it.
+type CalendarSubscriptionInput struct {
+	Name          string `json:"name" validate:"required,min=1,max=100"`
+	URL           string `json:"url" validate:"required,url,max=2048"`
+	Username      string `json:"username" validate:"omitempty,max=200"`
+	Password      string `json:"password" validate:"omitempty,max=500"`
+	ClearPassword bool   `json:"clear_password"`
+	SyncEnabled   *bool  `json:"sync_enabled"`
+	PastDays      *int   `json:"past_days" validate:"omitempty,min=0,max=3650"`
+	FutureDays    *int   `json:"future_days" validate:"omitempty,min=0,max=3650"`
+}
+
+// CalendarSubscriptionResponse is the DTO returned for a calendar subscription (no password)
+type CalendarSubscriptionResponse struct {
+	ID             uint       `json:"id"`
+	Name           string     `json:"name"`
+	URL            string     `json:"url"`
+	Username       string     `json:"username"`
+	HasPassword    bool       `json:"has_password"`
+	SyncEnabled    bool       `json:"sync_enabled"`
+	PastDays       int        `json:"past_days"`
+	FutureDays     int        `json:"future_days"`
+	LastSyncedAt   *time.Time `json:"last_synced_at"`
+	LastSyncStatus string     `json:"last_sync_status"`
+	LastSyncError  string     `json:"last_sync_error"`
+	CreatedAt      time.Time  `json:"created_at"`
+}
+
+// CardDAVConnectionInput is the DTO for creating/updating the user's CardDAV
+// connection. On update, an empty password keeps the stored one (set ClearPassword to remove it)
+type CardDAVConnectionInput struct {
+	BaseURL         string `json:"base_url" validate:"required,url,max=2048"`
+	AddressBookPath string `json:"address_book_path" validate:"required,max=2048"`
+	AddressBookName string `json:"address_book_name" validate:"max=200"`
+	Username        string `json:"username" validate:"omitempty,max=200"`
+	Password        string `json:"password" validate:"omitempty,max=500"`
+	ClearPassword   bool   `json:"clear_password"`
+	Direction       string `json:"direction" validate:"omitempty,oneof=two_way pull push"`
+	SyncEnabled     *bool  `json:"sync_enabled"`
+}
+
+// CardDAVDiscoverInput is the DTO for listing address books on a CardDAV server.
+// An empty password reuses the stored connection credentials when present.
+type CardDAVDiscoverInput struct {
+	BaseURL  string `json:"base_url" validate:"required,url,max=2048"`
+	Username string `json:"username" validate:"omitempty,max=200"`
+	Password string `json:"password" validate:"omitempty,max=500"`
+}
+
+// CardDAVConnectionResponse is the DTO returned for a CardDAV connection (no
+// secrets). Syncs run in the background, so this is also the polling target
+// that reports whether one is in flight and how the last one turned out.
+type CardDAVConnectionResponse struct {
+	ID              uint       `json:"id"`
+	BaseURL         string     `json:"base_url"`
+	AddressBookPath string     `json:"address_book_path"`
+	AddressBookName string     `json:"address_book_name"`
+	Username        string     `json:"username"`
+	HasPassword     bool       `json:"has_password"`
+	Direction       string     `json:"direction"`
+	SyncEnabled     bool       `json:"sync_enabled"`
+	SyncRunning     bool       `json:"sync_running"`
+	LastSyncedAt    *time.Time `json:"last_synced_at"`
+	LastSyncStatus  string     `json:"last_sync_status"`
+	LastSyncError   string     `json:"last_sync_error"`
+	// LastSyncStats is a ContactSyncStats object, or null before the first run.
+	LastSyncStats json.RawMessage `json:"last_sync_stats"`
+	CreatedAt     time.Time       `json:"created_at"`
+}
+
+// DiscoveredAddressBook describes one address book found on a CardDAV server.
+type DiscoveredAddressBook struct {
+	Path        string `json:"path"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// NoteInput represents the DTO for creating/updating notes
+type NoteInput struct {
+	Title     string    `json:"title" validate:"max=200"`
+	Content   string    `json:"content" validate:"required,min=1,max=5000"`
+	Date      time.Time `json:"date" validate:"required"`
+	ContactID *uint     `json:"contact_id" validate:"omitempty,gt=0"`
+	CompanyID *uint     `json:"company_id" validate:"omitempty,gt=0"`
+}
+
+// ContactInput represents the DTO for creating/updating contacts
+type ContactInput struct {
+	Firstname          string            `json:"firstname" validate:"required,min=1,max=100"`
+	Lastname           string            `json:"lastname" validate:"max=100"`
+	Nickname           string            `json:"nickname" validate:"max=50"`
+	Gender             string            `json:"gender" validate:"omitempty,oneof=male female other prefer_not_to_say"`
+	Email              string            `json:"email" validate:"omitempty,email"`
+	Phone              string            `json:"phone" validate:"omitempty,phone"`
+	Birthday           string            `json:"birthday" validate:"omitempty,birthday"`
+	Address            string            `json:"address" validate:"max=500"`
+	HowWeMet           string            `json:"how_we_met" validate:"max=1000"`
+	FoodPreference     string            `json:"food_preference" validate:"max=500"`
+	WorkInformation    string            `json:"work_information" validate:"max=1000"`
+	ContactInformation string            `json:"contact_information" validate:"max=1000"`
+	Circles            []string          `json:"circles" validate:"unique_circles"`
+	CustomFields       map[string]string `json:"custom_fields"`
+
+	// Multi-valued vCard fields
+	Emails    []ContactEmail   `json:"emails" validate:"omitempty,max=25,dive"`
+	Phones    []ContactPhone   `json:"phones" validate:"omitempty,max=25,dive"`
+	Addresses []ContactAddress `json:"addresses" validate:"omitempty,max=25,dive"`
+	URLs      []ContactURL     `json:"urls" validate:"omitempty,max=25,dive"`
+	IMPPs     []ContactIMPP    `json:"impps" validate:"omitempty,max=25,dive"`
+
+	// Structured name parts
+	Prefix     string `json:"prefix" validate:"max=50"`
+	MiddleName string `json:"middle_name" validate:"max=100"`
+	Suffix     string `json:"suffix" validate:"max=50"`
+
+	// Organizational fields
+	Organization string `json:"organization" validate:"max=200"`
+	Department   string `json:"department" validate:"max=200"`
+	JobTitle     string `json:"job_title" validate:"max=200"`
+	Role         string `json:"role" validate:"max=200"`
+
+	Anniversary string `json:"anniversary" validate:"omitempty,birthday"`
+
+	// Client-specific fields
+	Rut           string    `json:"rut" validate:"max=30"`
+	ContactPerson string    `json:"contact_person" validate:"max=200"`
+	Companies     []Company `json:"companies" validate:"omitempty,max=50,dive"`
+}
+
+// CustomFieldNamesInput represents the DTO for updating user's custom field definitions
+type CustomFieldNamesInput struct {
+	Names []string `json:"names" validate:"dive,max=100"`
+}
+
+// represents the DTO for updating which extended contact fields are visible in the UI. A nil/absent list means "use the default set"
+type EnabledContactFieldsInput struct {
+	Fields []string `json:"fields" validate:"dive,max=50"`
+}
+
+// UserRegistrationInput represents the DTO for user registration
+// This DTO intentionally excludes IsAdmin to prevent mass assignment attacks
+type UserRegistrationInput struct {
+	Username string `json:"username" validate:"required,min=1,max=50,no_at_sign"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8,strong_password"`
+	Language string `json:"language" validate:"omitempty,oneof=en de it es fr"`
+}
+
+// PasswordResetRequestInput captures email for initiating password reset
+type PasswordResetRequestInput struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// PasswordResetConfirmInput carries token and new password for reset flow
+type PasswordResetConfirmInput struct {
+	Token    string `json:"token" validate:"required,min=16"`
+	Password string `json:"password" validate:"required,min=8,strong_password"`
+}
+
+// ChangePasswordInput is used by authenticated users to rotate credentials
+type ChangePasswordInput struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=8,strong_password"`
+}
+
+// RelationshipInput represents the DTO for creating/updating relationships
+// ContactID is not included as it comes from the URL parameter
+type RelationshipInput struct {
+	Name             string `json:"name" validate:"required,min=1,max=100"`
+	Type             string `json:"type" validate:"required,min=1,max=50"`
+	Gender           string `json:"gender" validate:"omitempty,oneof=male female other prefer_not_to_say"`
+	Birthday         string `json:"birthday" validate:"omitempty,birthday"`
+	RelatedContactID *uint  `json:"related_contact_id"`
+}
+
+// ContactResponse represents the DTO returned from GET /contacts with photo thumbnail
+type ContactResponse struct {
+	Contact
+	PhotoThumbnail string `json:"photo_thumbnail"`
+}
+
+// Birthday represents a unified birthday entry for contacts and relationships
+type Birthday struct {
+	Type                  string `json:"type"`                              // "contact" or "relationship"
+	Name                  string `json:"name"`                              // Unified display name
+	Birthday              string `json:"birthday"`                          // Birthday in YYYY-MM-DD format
+	PhotoThumbnail        string `json:"photo_thumbnail,omitempty"`         // Profile picture thumbnail (base64)
+	ContactID             uint   `json:"contact_id"`                        // Contact ID (the person or parent contact for relationships)
+	RelationshipType      string `json:"relationship_type,omitempty"`       // Relationship type (empty for contacts)
+	AssociatedContactName string `json:"associated_contact_name,omitempty"` // Parent contact name (for relationships)
+}
+
+// GraphNode represents a node in the network visualization (contact or activity)
+type GraphNode struct {
+	ID             string   `json:"id"`                        // "c-{contactID}" or "a-{activityID}"
+	Type           string   `json:"type"`                      // "contact" or "activity"
+	Label          string   `json:"label"`                     // Display name or activity title
+	PhotoThumbnail string   `json:"photo_thumbnail,omitempty"` // Profile picture for contacts (base64)
+	Circles        []string `json:"circles,omitempty"`         // Circles for contacts
+}
+
+// GraphEdge represents an edge in the network visualization
+type GraphEdge struct {
+	ID     string `json:"id"`     // Unique edge ID
+	Source string `json:"source"` // Source node ID
+	Target string `json:"target"` // Target node ID
+	Type   string `json:"type"`   // "relationship" or "activity"
+	Label  string `json:"label"`  // Relationship type or activity title
+}
+
+// GraphResponse is the API response for the network graph
+type GraphResponse struct {
+	Nodes []GraphNode `json:"nodes"`
+	Edges []GraphEdge `json:"edges"`
+}
+
+// AdminUserResponse - user data returned to admin (no password)
+type AdminUserResponse struct {
+	ID         uint      `json:"id"`
+	Username   string    `json:"username"`
+	Email      string    `json:"email"`
+	Language   string    `json:"language"`
+	DateFormat string    `json:"date_format"`
+	IsAdmin    bool      `json:"is_admin"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// /users/me payload: standard user fields plus caller's UI preferences (custom field names and enabled contact fields)
+type CurrentUserResponse struct {
+	AdminUserResponse
+	CustomFieldNames     []string `json:"custom_field_names"`
+	EnabledContactFields []string `json:"enabled_contact_fields"`
+}
+
+// AdminUserUpdateInput - DTO for admin updating a user
+type AdminUserUpdateInput struct {
+	Username *string `json:"username" validate:"omitempty,min=1,max=50,no_at_sign"`
+	Email    *string `json:"email" validate:"omitempty,email"`
+	Password *string `json:"password" validate:"omitempty,min=8,strong_password"`
+	IsAdmin  *bool   `json:"is_admin"`
+}
+
+// AdminUsersListResponse - paginated list of users
+type AdminUsersListResponse struct {
+	Users      []AdminUserResponse `json:"users"`
+	Total      int64               `json:"total"`
+	Page       int                 `json:"page"`
+	Limit      int                 `json:"limit"`
+	TotalPages int                 `json:"total_pages"`
+}
+
+// ApiTokenInput represents the DTO for creating an API token
+type ApiTokenInput struct {
+	Name string `json:"name" validate:"required,min=1,max=100"`
+}
+
+// ApiTokenResponse represents the DTO returned for an API token
+type ApiTokenResponse struct {
+	ID         uint       `json:"id"`
+	Name       string     `json:"name"`
+	CreatedAt  time.Time  `json:"created_at"`
+	LastUsedAt *time.Time `json:"last_used_at"`
+	RevokedAt  *time.Time `json:"revoked_at"`
+}
+
+// ApiTokenCreateResponse is returned on token creation and includes the plaintext token
+type ApiTokenCreateResponse struct {
+	ApiTokenResponse
+	Token string `json:"token"`
+}
+
+// WebhookInput is the DTO for creating/updating a webhook
+type WebhookInput struct {
+	Name     string   `json:"name" validate:"required,min=1,max=200"`
+	URL      string   `json:"url" validate:"required,http_url"`
+	Events   []string `json:"events" validate:"required,min=1,dive,oneof=contact.created contact.updated contact.deleted note.created note.updated note.deleted activity.created activity.updated activity.deleted reminder.triggered birthday.occurred"`
+	IsActive bool     `json:"is_active"`
+}
+
+// WebhookResponse is the DTO returned for a webhook (no secret)
+type WebhookResponse struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	URL       string    `json:"url"`
+	Events    []string  `json:"events"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// WebhookCreateResponse is the DTO returned once after creation — includes the plaintext secret
+type WebhookCreateResponse struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	URL       string    `json:"url"`
+	Events    []string  `json:"events"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+	Secret    string    `json:"secret"`
+}
+
+// WebhookDeliveryResponse is the DTO returned for a webhook delivery record
+type WebhookDeliveryResponse struct {
+	ID          uint       `json:"id"`
+	WebhookID   uint       `json:"webhook_id"`
+	EventType   string     `json:"event_type"`
+	StatusCode  *int       `json:"status_code"`
+	Error       *string    `json:"error"`
+	Attempts    int        `json:"attempts"`
+	NextRetryAt *time.Time `json:"next_retry_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+}

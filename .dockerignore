@@ -1,0 +1,39 @@
+# Root build context
+# Keep the context small and avoid leaking local data/secrets.
+
+.git
+.github
+.gitignore
+*.md
+
+# Node
+node_modules
+frontend/node_modules
+frontend/build
+frontend/coverage
+
+# Go / backend local artifacts
+backend/meerkat
+backend/tmp
+backend/vendor
+backend/*.db
+backend/*.sqlite*
+backend/**/*_test.go
+
+# Local data (do not bake into the image). backend/static/photos and
+# backend/static/meerkat.db stay in the context: the production Dockerfile
+# never copies them, and demo/Dockerfile bakes them into the demo image.
+data
+photos
+
+# Environment files / secrets
+**/.env
+**/.env.*
+backend/my_environment.env
+
+# Editor / OS cruft. The `**/` prefix matters: a bare `.DS_Store` only matches
+# the one at the context root, so frontend/public/.DS_Store used to be copied
+# into the image and served publicly at /.DS_Store.
+**/.DS_Store
+**/.idea
+**/.vscode

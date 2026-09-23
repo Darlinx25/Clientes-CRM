@@ -1,0 +1,102 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The images are tagged by docker/metadata-action's `{{version}}`, which
+      # strips the leading "v" from the git tag. github.ref_name keeps it, so
+      # quoting it in the release notes advertised a tag that is never pushed
+      # (ghcr.io/...:v1.6.2 -> manifest unknown). Strip it here to match.
+      - name: Derive image tag from git tag
+        id: version
+        run: echo "image_tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          append_body: true
+          body: |
+
+            ## Docker Images
+
+            All-in-one image (frontend + backend in one container):
+            ```
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.image_tag }}
+            ```
+
+            Separate images:
+            ```
+            ghcr.io/${{ github.repository }}-backend:${{ steps.version.outputs.image_tag }}
+            ghcr.io/${{ github.repository }}-frontend:${{ steps.version.outputs.image_tag }}
+            ```
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - context: ./backend
+            file: ./backend/Dockerfile
+            suffix: -backend
+          - context: ./frontend
+            file: ./frontend/Dockerfile
+            suffix: -frontend
+          - context: .
+            file: ./Dockerfile
+            suffix: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.suffix }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

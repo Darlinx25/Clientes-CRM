@@ -1,0 +1,40 @@
+{
+  "email": {
+    "footer": "Meerkat CRM - Gestion des contacts personnels",
+    "reminder": {
+      "subject": "Vos rappels quotidiens",
+      "remindersTitle": "Vos rappels pour aujourd'hui",
+      "birthdaysTitle": "Anniversaires à venir",
+      "today": "Aujourd'hui !",
+      "tomorrow": "Demain",
+      "inDays": "Dans {{days}} jours",
+      "unknownContact": "Inconnu",
+      "contactLabel": "Contact"
+    },
+    "passwordReset": {
+      "subject": "Réinitialisez votre mot de passe Meerkat CRM",
+      "intro": "Nous avons reçu une demande de réinitialisation de votre mot de passe Meerkat CRM.",
+      "instruction": "Utilisez ce jeton pour finaliser la réinitialisation dans les 60 minutes :",
+      "ignore": "Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet e-mail."
+    }
+  },
+  "calendar": {
+    "untitledEvent": "Événement de calendrier sans titre"
+  },
+  "monicaImport": {
+    "untitledActivity": "Activité",
+    "gift": {
+      "idea": "idée",
+      "offered": "offert",
+      "received": "reçu"
+    },
+    "note": {
+      "call": "Appel le {{date}} (importé depuis Monica) :\n{{content}}",
+      "task": "Tâche ouverte (importée depuis Monica) : {{title}}",
+      "taskCompleted": "Tâche terminée (importée depuis Monica) : {{title}}",
+      "gift": "Cadeau ({{status}}, importé depuis Monica) : {{name}}",
+      "debtYouOwe": "Dette (importée depuis Monica) : je dois {{amount}}",
+      "debtTheyOwe": "Dette (importée depuis Monica) : me doit {{amount}}"
+    }
+  }
+}

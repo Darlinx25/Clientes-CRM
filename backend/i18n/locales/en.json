@@ -1,0 +1,40 @@
+{
+  "email": {
+    "footer": "Meerkat CRM - Personal Contact Management",
+    "reminder": {
+      "subject": "Your Daily Reminders",
+      "remindersTitle": "Your Reminders for Today",
+      "birthdaysTitle": "Upcoming Birthdays",
+      "today": "Today!",
+      "tomorrow": "Tomorrow",
+      "inDays": "In {{days}} days",
+      "unknownContact": "Unknown",
+      "contactLabel": "Contact"
+    },
+    "passwordReset": {
+      "subject": "Reset your Meerkat CRM password",
+      "intro": "We received a request to reset your Meerkat CRM password.",
+      "instruction": "Use this token to complete the reset within 60 minutes:",
+      "ignore": "If you did not request this reset, you can ignore this email."
+    }
+  },
+  "calendar": {
+    "untitledEvent": "Untitled calendar event"
+  },
+  "monicaImport": {
+    "untitledActivity": "Activity",
+    "gift": {
+      "idea": "idea",
+      "offered": "given",
+      "received": "received"
+    },
+    "note": {
+      "call": "Call on {{date}} (imported from Monica):\n{{content}}",
+      "task": "Open task (imported from Monica): {{title}}",
+      "taskCompleted": "Completed task (imported from Monica): {{title}}",
+      "gift": "Gift ({{status}}, imported from Monica): {{name}}",
+      "debtYouOwe": "Debt (imported from Monica): I owe {{amount}}",
+      "debtTheyOwe": "Debt (imported from Monica): owes me {{amount}}"
+    }
+  }
+}
