@@ -116,7 +116,6 @@ type ContactInput struct {
 	FoodPreference     string            `json:"food_preference" validate:"max=500"`
 	WorkInformation    string            `json:"work_information" validate:"max=1000"`
 	ContactInformation string            `json:"contact_information" validate:"max=1000"`
-	Circles            []string          `json:"circles" validate:"unique_circles"`
 	CustomFields       map[string]string `json:"custom_fields"`
 
 	// Multi-valued vCard fields
@@ -158,10 +157,11 @@ type EnabledContactFieldsInput struct {
 // UserRegistrationInput represents the DTO for user registration
 // This DTO intentionally excludes IsAdmin to prevent mass assignment attacks
 type UserRegistrationInput struct {
-	Username string `json:"username" validate:"required,min=1,max=50,no_at_sign"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=8,strong_password"`
-	Language string `json:"language" validate:"omitempty,oneof=en de it es fr"`
+	Username        string `json:"username" validate:"required,min=1,max=50,no_at_sign"`
+	Email           string `json:"email" validate:"omitempty,email"`
+	Password        string `json:"password" validate:"required"`
+	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=Password"`
+	Language        string `json:"language" validate:"omitempty,oneof=en de it es fr"`
 }
 
 // PasswordResetRequestInput captures email for initiating password reset
@@ -172,13 +172,13 @@ type PasswordResetRequestInput struct {
 // PasswordResetConfirmInput carries token and new password for reset flow
 type PasswordResetConfirmInput struct {
 	Token    string `json:"token" validate:"required,min=16"`
-	Password string `json:"password" validate:"required,min=8,strong_password"`
+	Password string `json:"password" validate:"required"`
 }
 
 // ChangePasswordInput is used by authenticated users to rotate credentials
 type ChangePasswordInput struct {
 	CurrentPassword string `json:"current_password" validate:"required"`
-	NewPassword     string `json:"new_password" validate:"required,min=8,strong_password"`
+	NewPassword     string `json:"new_password" validate:"required"`
 }
 
 // RelationshipInput represents the DTO for creating/updating relationships
@@ -210,11 +210,10 @@ type Birthday struct {
 
 // GraphNode represents a node in the network visualization (contact or activity)
 type GraphNode struct {
-	ID             string   `json:"id"`                        // "c-{contactID}" or "a-{activityID}"
-	Type           string   `json:"type"`                      // "contact" or "activity"
-	Label          string   `json:"label"`                     // Display name or activity title
-	PhotoThumbnail string   `json:"photo_thumbnail,omitempty"` // Profile picture for contacts (base64)
-	Circles        []string `json:"circles,omitempty"`         // Circles for contacts
+	ID             string `json:"id"`                        // "c-{contactID}" or "a-{activityID}"
+	Type           string `json:"type"`                      // "contact" or "activity"
+	Label          string `json:"label"`                     // Display name or activity title
+	PhotoThumbnail string `json:"photo_thumbnail,omitempty"` // Profile picture for contacts (base64)
 }
 
 // GraphEdge represents an edge in the network visualization
@@ -255,7 +254,7 @@ type CurrentUserResponse struct {
 type AdminUserUpdateInput struct {
 	Username *string `json:"username" validate:"omitempty,min=1,max=50,no_at_sign"`
 	Email    *string `json:"email" validate:"omitempty,email"`
-	Password *string `json:"password" validate:"omitempty,min=8,strong_password"`
+	Password *string `json:"password" validate:"omitempty"`
 	IsAdmin  *bool   `json:"is_admin"`
 }
 

@@ -42,6 +42,8 @@ interface CompanyDialogState {
   company: Company | null;
   companyNumber: string;
   typeIds: number[];
+  otherType: boolean;
+  customType: string;
 }
 
 export default function CompanySection({ contactId, companies, onChange }: CompanySectionProps) {
@@ -52,6 +54,8 @@ export default function CompanySection({ contactId, companies, onChange }: Compa
     company: null,
     companyNumber: '',
     typeIds: [],
+    otherType: false,
+    customType: '',
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -75,7 +79,7 @@ export default function CompanySection({ contactId, companies, onChange }: Compa
   }, []);
 
   const openAdd = () => {
-    setDialog({ open: true, company: null, companyNumber: '', typeIds: [] });
+    setDialog({ open: true, company: null, companyNumber: '', typeIds: [], otherType: false, customType: '' });
   };
 
   const openEdit = (company: Company) => {
@@ -84,6 +88,8 @@ export default function CompanySection({ contactId, companies, onChange }: Compa
       company,
       companyNumber: company.company_number,
       typeIds: (company.types || []).map(ct => ct.ID),
+      otherType: !!company.custom_type,
+      customType: company.custom_type || '',
     });
   };
 
@@ -104,9 +110,15 @@ export default function CompanySection({ contactId, companies, onChange }: Compa
       return;
     }
 
+    if (dialog.otherType && !dialog.customType.trim()) {
+      showError(t('companies.otherTypeRequired', 'Ingrese el tipo de empresa o desmarque "Otro"'));
+      return;
+    }
+
     const payload: CompanyInput = {
       company_number: dialog.companyNumber.trim(),
       type_ids: dialog.typeIds,
+      custom_type: dialog.otherType ? dialog.customType.trim() : '',
     };
 
     setSaving(true);
@@ -191,6 +203,9 @@ export default function CompanySection({ contactId, companies, onChange }: Compa
                   {(company.types || []).map(ct => (
                     <Chip key={ct.ID} label={ct.name} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.72rem' }} />
                   ))}
+                  {company.custom_type && (
+                    <Chip label={company.custom_type} size="small" color="primary" sx={{ height: 20, fontSize: '0.72rem' }} />
+                  )}
                 </Stack>
               </Box>
               <IconButton
@@ -247,7 +262,27 @@ export default function CompanySection({ contactId, companies, onChange }: Compa
                     label={<Typography variant="body2">{ct.name}</Typography>}
                   />
                 ))}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={dialog.otherType}
+                      onChange={(e) => setDialog({ ...dialog, otherType: e.target.checked })}
+                    />
+                  }
+                  label={<Typography variant="body2">{t('companies.otherType', 'Otro')}</Typography>}
+                />
               </Box>
+              {dialog.otherType && (
+                <TextField
+                  label={t('companies.otherTypeLabel', 'Escriba el tipo de empresa')}
+                  fullWidth
+                  size="small"
+                  value={dialog.customType}
+                  onChange={e => setDialog({ ...dialog, customType: e.target.value })}
+                  autoFocus
+                />
+              )}
             </Box>
             <Divider />
             <Typography variant="caption" color="text.secondary">

@@ -255,17 +255,11 @@ export default function ContactsPage() {
                       />
                     )}
                   </Box>
-                  <Stack direction="row" spacing={0.5} mt={0.5} flexWrap="wrap" gap={0.5}>
-                    {contact.circles && contact.circles.filter((circle, idx, arr) => arr.indexOf(circle) === idx).map((circle: string) => (
-                      <Chip
-                        key={`${contact.ID}-${circle}`}
-                        label={circle}
-                        size="small"
-                        variant="outlined"
-                        sx={{ height: 20, fontSize: '0.75rem' }}
-                      />
-                    ))}
-                  </Stack>
+                  {contact.rut && (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                      {t('client.rut', 'RUT')}: {contact.rut}
+                    </Typography>
+                  )}
                 </Box>
               </Card>
             ))}

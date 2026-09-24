@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net"
@@ -74,12 +76,26 @@ func LoadConfig() *Config {
 	writeTimeout := getIntEnv("HTTP_WRITE_TIMEOUT", 15)
 	idleTimeout := getIntEnv("HTTP_IDLE_TIMEOUT", 60)
 
+	// Portable defaults: when no env vars are set, everything lives relative to
+	// the executable folder so the app can be double-clicked on a machine
+	// without Docker/installation. Explicit env vars always win (Docker uses
+	// them), so this does not change the containerised deployment.
+	dbPath := getEnv("SQLITE_DB_PATH", filepath.Join(exeDir(), "data", "meerkat.db"))
+	profilePhotoDir := getEnv("PROFILE_PHOTO_DIR", filepath.Join(exeDir(), "photos"))
+
+	// If JWT_SECRET_KEY is not provided, persist a generated secret next to the
+	// database so logins survive restarts with zero configuration.
+	jwtSecret := getEnv("JWT_SECRET_KEY", "")
+	if jwtSecret == "" {
+		jwtSecret = loadOrCreateSecret(filepath.Join(filepath.Dir(dbPath), "jwt_secret"))
+	}
+
 	cfg := &Config{
-		DBPath:                  getEnv("SQLITE_DB_PATH", "meerkat.db"),
+		DBPath:                  dbPath,
 		ReminderTime:            getEnv("REMINDER_TIME", "12:00"),
 		ReminderTimezone:        getEnv("REMINDER_TIMEZONE", "UTC"),
 		FrontendURL:             getEnv("FRONTEND_URL", "*"),
-		Port:                    getEnv("PORT", "8080"),
+		Port:                    getEnv("PORT", "7300"),
 		ResendAPIKey:            getEnv("RESEND_API_KEY", ""),
 		ResendFromEmail:         getEnv("RESEND_FROM_EMAIL", ""),
 		SMTPHost:                getEnv("SMTP_HOST", ""),
@@ -88,13 +104,13 @@ func LoadConfig() *Config {
 		SMTPPassword:            getEnv("SMTP_PASSWORD", ""),
 		SMTPFromEmail:           getEnv("SMTP_FROM_EMAIL", ""),
 		SMTPUseTLS:              getBoolEnv("SMTP_USE_TLS", false),
-		JWTSecretKey:            getEnv("JWT_SECRET_KEY", ""),
+		JWTSecretKey:            jwtSecret,
 		JWTExpiryHours:          jwtExpiryHours,
 		TrustedProxies:          getProxies(getEnv("TRUSTED_PROXIES", "")),
 		ReadTimeout:             readTimeout,
 		WriteTimeout:            writeTimeout,
 		IdleTimeout:             idleTimeout,
-		ProfilePhotoDir:         getEnv("PROFILE_PHOTO_DIR", ""),
+		ProfilePhotoDir:         profilePhotoDir,
 		CardDAVEnabled:          getBoolEnv("CARDDAV_ENABLED", false),
 		CookieSecure:            getBoolEnv("COOKIE_SECURE", false),
 		CookieDomain:            getEnv("COOKIE_DOMAIN", ""),
@@ -103,6 +119,14 @@ func LoadConfig() *Config {
 		CalDAVSyncIntervalHours: getIntEnv("CALDAV_SYNC_INTERVAL_HOURS", 6),
 		CalDAVBlockPrivateURLs:  getBoolEnv("CALDAV_BLOCK_PRIVATE_URLS", false),
 		MonicaBlockPrivateURLs:  getBoolEnv("MONICA_BLOCK_PRIVATE_URLS", false),
+	}
+
+	// Ensure the directories the app writes to exist (DB comes with migrations,
+	// photos are written on upload).
+	for _, dir := range []string{filepath.Dir(cfg.DBPath), cfg.ProfilePhotoDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			log.Printf("WARN: could not create directory %s: %v", dir, err)
+		}
 	}
 
 	if cfg.CalDAVSyncIntervalHours < 1 {
@@ -142,6 +166,40 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+// exeDir returns the directory containing the running executable, so portable
+// defaults can be placed next to the binary (double-click deployment).
+func exeDir() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "."
+	}
+	return filepath.Dir(exe)
+}
+
+// loadOrCreateSecret reads a persisted secret file, generating and storing one
+// (crypto/rand, hex) if the file is missing or too short. Returns "" only if
+// neither the file nor generation succeed, in which case config validation
+// will ask for JWT_SECRET_KEY explicitly.
+func loadOrCreateSecret(path string) string {
+	if data, err := os.ReadFile(path); err == nil {
+		if s := strings.TrimSpace(string(data)); len(s) >= 32 {
+			return s
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return ""
+	}
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return ""
+	}
+	secret := hex.EncodeToString(raw)
+	if err := os.WriteFile(path, []byte(secret), 0o600); err != nil {
+		return ""
+	}
+	return secret
 }
 
 func getIntEnv(key string, fallback int) int {

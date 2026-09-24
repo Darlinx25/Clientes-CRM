@@ -77,7 +77,7 @@ func GetActivity(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
 
 	if err := db.Preload("Contacts", func(db *gorm.DB) *gorm.DB {
-		return db.Select("ID", "Firstname", "Lastname", "PhotoThumbnail", "Circles")
+		return db.Select("ID", "Firstname", "Lastname", "PhotoThumbnail")
 	}).First(&activity, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			apperrors.AbortWithError(c, apperrors.ErrNotFound("Activity").WithDetails("id", id))
@@ -121,13 +121,13 @@ func GetActivities(c *gin.Context) {
 	}
 
 	if search != "" {
-		like := "%" + search + "%"
-		searchClause := db.Where("LOWER(activities.title) LIKE ?", like).
-			Or("LOWER(activities.description) LIKE ?", like).
-			Or("LOWER(activities.location) LIKE ?", like).
-			Or("LOWER(COALESCE(contacts.firstname, '')) LIKE ?", like).
-			Or("LOWER(COALESCE(contacts.lastname, '')) LIKE ?", like).
-			Or("LOWER(COALESCE(contacts.nickname, '')) LIKE ?", like)
+		like := "%" + foldTerm(search) + "%"
+		searchClause := db.Where(accentFoldExpr("activities.title")+" LIKE ?", like).
+			Or(accentFoldExpr("activities.description")+" LIKE ?", like).
+			Or(accentFoldExpr("activities.location")+" LIKE ?", like).
+			Or(accentFoldExpr("COALESCE(contacts.firstname, '')")+" LIKE ?", like).
+			Or(accentFoldExpr("COALESCE(contacts.lastname, '')")+" LIKE ?", like).
+			Or(accentFoldExpr("COALESCE(contacts.nickname, '')")+" LIKE ?", like)
 
 		baseQuery = baseQuery.
 			Select("DISTINCT activities.*").
@@ -149,7 +149,7 @@ func GetActivities(c *gin.Context) {
 
 	if includeContacts {
 		query = query.Preload("Contacts", func(db *gorm.DB) *gorm.DB {
-			return db.Select("ID", "Firstname", "Lastname", "PhotoThumbnail", "Circles")
+			return db.Select("ID", "Firstname", "Lastname", "PhotoThumbnail")
 		})
 		logger.FromContext(c).Debug().Msg("Preloading contacts for activities")
 	}
@@ -290,7 +290,7 @@ func GetActivitiesForContact(c *gin.Context) {
 	var activities []models.Activity
 	// Eager load contacts associated with each activity
 	if err := db.Preload("Contacts", func(db *gorm.DB) *gorm.DB {
-		return db.Select("ID", "Firstname", "Lastname", "PhotoThumbnail", "Circles")
+		return db.Select("ID", "Firstname", "Lastname", "PhotoThumbnail")
 	}).
 		Model(&models.Activity{}).
 		Joins("JOIN activity_contacts ON activities.id = activity_contacts.activity_id").

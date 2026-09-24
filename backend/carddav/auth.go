@@ -4,6 +4,7 @@ import (
 	"meerkat/logger"
 	"meerkat/middleware"
 	"meerkat/models"
+	"meerkat/passwords"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,7 +72,7 @@ func BasicAuthMiddleware() gin.HandlerFunc {
 		}
 
 		// Validate password
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		if !passwords.VerifyPassword(user.Password, password) {
 			// Record failed attempt for password mismatch
 			isLocked, _ := accountLimiter.RecordFailedAttempt(identifier)
 			logger.Warn().

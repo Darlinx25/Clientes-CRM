@@ -58,7 +58,6 @@ func TestSuggestColumnMappings_GoogleStyle(t *testing.T) {
 		{"Address 1 - Country", "address_country", 0},
 		{"Address 1 - Label", "address_label", 0},
 		{"Website 1 - Value", "url", 0},
-		{"Labels", "circles", 0},
 	}
 
 	for _, tc := range cases {
@@ -85,14 +84,14 @@ func TestBuildContactFromRow_MultiValue(t *testing.T) {
 		"E-mail 1 - Label", "E-mail 1 - Value", "E-mail 2 - Label", "E-mail 2 - Value",
 		"Phone 1 - Label", "Phone 1 - Value",
 		"Address 1 - Street", "Address 1 - City", "Address 1 - Postal Code", "Address 1 - Country", "Address 1 - Label",
-		"Website 1 - Value", "Labels",
+		"Website 1 - Value",
 	}
 	row := []string{
 		"Ada", "Lovelace",
 		"Home", "ada@home.example", "Work", "ada@work.example",
 		"Mobile", "+44 20 7946 0000",
 		"12 Baker St", "London", "NW1", "UK", "Home",
-		"https://ada.example", "Friends ::: Math",
+		"https://ada.example",
 	}
 	mappings := SuggestColumnMappings(headers)
 
@@ -122,9 +121,6 @@ func TestBuildContactFromRow_MultiValue(t *testing.T) {
 	// One website.
 	assert.Len(t, c.URLs, 1)
 	assert.Equal(t, "https://ada.example", c.URLs[0].Value)
-
-	// Circles parsed.
-	assert.ElementsMatch(t, []string{"Friends", "Math"}, c.Circles)
 }
 
 func TestBuildContactFromRow_FlatSingleValue(t *testing.T) {

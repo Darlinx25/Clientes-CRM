@@ -19,9 +19,20 @@ type Note struct {
 	CompanyID *uint    `gorm:"index" json:"company_id"`
 	Company   *Company `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"company,omitempty"`
 
+	// UserID is the account the note belongs to (the shared owner in unified
+	// deployments). AuthorID/EditedByID record the real users who created and
+	// last edited the note, so author/editor names stay correct on shared data.
+	AuthorID   uint `gorm:"index;not null;default:0" json:"-"`
+	EditedByID uint `gorm:"index;not null;default:0" json:"-"`
+
 	// AuthorName is the username of the user who created the note.
-	// Not persisted (UserID is); filled at read time for display.
+	// Not persisted (AuthorID is); filled at read time for display.
 	AuthorName string `gorm:"-" json:"author_name"`
+
+	// EditedByName is the username of the user who last edited the note.
+	// Not persisted (EditedByID is); filled at read time. Empty when the note
+	// has never been edited.
+	EditedByName string `gorm:"-" json:"edited_by_name"`
 
 	// OriginalTitle/OriginalContent keep the note's first-saved version so the
 	// UI can show an "edited" state with the edit date and let the user view

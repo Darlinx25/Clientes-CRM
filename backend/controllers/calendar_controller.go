@@ -18,7 +18,7 @@ const maxCalendarSubscriptionsPerUser = 10
 
 func ListCalendarSubscriptions(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -34,7 +34,7 @@ func ListCalendarSubscriptions(c *gin.Context) {
 
 func CreateCalendarSubscription(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -93,7 +93,7 @@ func CreateCalendarSubscription(c *gin.Context) {
 
 func UpdateCalendarSubscription(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -148,7 +148,7 @@ func UpdateCalendarSubscription(c *gin.Context) {
 
 func DeleteCalendarSubscription(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -174,7 +174,7 @@ func DeleteCalendarSubscription(c *gin.Context) {
 
 func SyncCalendarSubscription(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}

@@ -18,6 +18,9 @@ interface MultiValueFieldProps {
   typeOptions?: readonly string[];
   /** When true, the type column is a free-text field (used for IMPP service names) */
   freeTextType?: boolean;
+  /** When true the type column is not shown at all; only the value matters.
+   *  New rows still store a sensible default type for the vCard export. */
+  hideType?: boolean;
 }
 
 export default function MultiValueField({
@@ -28,6 +31,7 @@ export default function MultiValueField({
   defaultType = 'home',
   typeOptions = CONTACT_TYPE_OPTIONS,
   freeTextType = false,
+  hideType = false,
 }: MultiValueFieldProps) {
   const { t } = useTranslation();
   const rowKeys = useRowKeys(value.length);
@@ -54,7 +58,7 @@ export default function MultiValueField({
       <Stack spacing={1}>
         {value.map((row, index) => (
           <Stack key={rowKeys.keyAt(index)} direction="row" spacing={1} alignItems="center">
-            {freeTextType ? (
+            {!hideType && (freeTextType ? (
               <TextField
                 label={t('contacts.fieldType')}
                 size="small"
@@ -81,7 +85,7 @@ export default function MultiValueField({
                   <TextField {...params} label={t('contacts.fieldType')} size="small" />
                 )}
               />
-            )}
+            ))}
             <TextField
               label={label}
               size="small"

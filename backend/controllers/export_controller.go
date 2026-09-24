@@ -91,7 +91,7 @@ func ExportData(c *gin.Context) {
 	contactHeaders := []string{
 		"ID", "Firstname", "Lastname", "Nickname", "Gender", "Email", "Phone",
 		"Birthday", "Address", "How We Met", "Food Preference", "Work Information",
-		"Contact Information", "Circles", "Created At", "Updated At",
+		"Contact Information", "Created At", "Updated At",
 	}
 	// Add custom field names as additional headers
 	contactHeaders = append(contactHeaders, customFieldNames...)
@@ -116,7 +116,6 @@ func ExportData(c *gin.Context) {
 			contact.FoodPreference,
 			contact.WorkInformation,
 			contact.ContactInformation,
-			strings.Join(contact.Circles, "; "),
 			contact.CreatedAt.Format(time.RFC3339),
 			contact.UpdatedAt.Format(time.RFC3339),
 		}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ChangeEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -6,9 +6,7 @@ import {
   Company,
   getContact,
   updateContact,
-  getContactProfilePicture,
   deleteContact,
-  uploadProfilePicture,
   archiveContact,
   unarchiveContact
 } from './api/contacts';
@@ -19,11 +17,11 @@ import {
   getDeletedContactNotes,
   Note
 } from './api/notes';
+import { useDebouncedValue } from './hooks/useDebounce';
 import {
   Box,
   Card,
   CardContent,
-  Divider,
   Button,
   Typography,
   Dialog,
@@ -32,13 +30,11 @@ import {
   DialogActions
 } from '@mui/material';
 import { ContactDetailHeaderSkeleton, TimelineSkeleton } from './components/LoadingSkeletons';
-import NoteIcon from '@mui/icons-material/Note';
 import AddNoteDialog from './components/AddNoteDialog';
 import EditTimelineItemDialog from './components/EditTimelineItemDialog';
 import ContactHeader from './components/ContactHeader';
 import ContactInformation from './components/ContactInformation';
 import ContactTimeline from './components/ContactTimeline';
-import ProfilePictureUploadDialog from './components/ProfilePictureUploadDialog';
 import DeletedNotesDialog from './components/DeletedNotesDialog';
 import { useContactDialogs } from './hooks/useContactDialogs';
 import { useTimelineEditing, } from './hooks/useTimelineEditing';
@@ -57,7 +53,7 @@ const CONTACT_FIELDS = [
   'ID', 'firstname', 'lastname', 'nickname', 'gender',
   'email', 'phone', 'birthday', 'address', 'how_we_met',
   'food_preference', 'work_information', 'contact_information',
-  'circles', 'photo', 'custom_fields', 'archived',
+  'photo', 'custom_fields', 'archived',
   'emails', 'phones', 'impps',
   'prefix', 'middle_name', 'suffix', 'organization', 'department',
   'job_title', 'role', 'anniversary', 'rut', 'contact_person', 'companies'
@@ -70,12 +66,20 @@ export default function ContactDetailPage() {
   const { showError } = useSnackbar();
   const { formatBirthdayForInput, parseBirthdayInput, autoFormatBirthdayInput } = useDateFormat();
   const [contact, setContact] = useState<ContactWithRelations | null>(null);
-  const [profilePic, setProfilePic] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [validationError, setValidationError] = useState<string>('');
   const [notes, setNotes] = useState<Note[]>([]);
+  const NOTES_PER_PAGE = 5;
+  const [notesPage, setNotesPage] = useState(1);
+  const [notesTotal, setNotesTotal] = useState(0);
+  const [notesLimit, setNotesLimit] = useState(NOTES_PER_PAGE);
+  const [notesSearchInput, setNotesSearchInput] = useState('');
+  const notesSearch = useDebouncedValue(notesSearchInput, 400);
+  const [notesFromDate, setNotesFromDate] = useState('');
+  const [notesToDate, setNotesToDate] = useState('');
+  const [notesVersion, setNotesVersion] = useState(0);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [deletedNotes, setDeletedNotes] = useState<Note[]>([]);
   const [deletedNotesDialogOpen, setDeletedNotesDialogOpen] = useState(false);
@@ -86,22 +90,13 @@ export default function ContactDetailPage() {
     firstname: ''
   });
 
-  // Profile picture upload state
-  const [profilePictureDialogOpen, setProfilePictureDialogOpen] = useState(false);
-
   // Enabled extended contact fields (UI visibility)
   const [enabledFields, setEnabledFields] = useState<Set<ContactFieldKey>>(() => resolveEnabledFields(null));
 
-  // Unified refresh function for notes
+  // Unified refresh function for notes: bumping the version re-runs the notes
+  // effect, which refetches with the current page and filters.
   const refreshNotesAndActivities = async () => {
-    if (!id) return;
-
-    try {
-      const notesData = await getContactNotes(id);
-      setNotes(notesData.notes || []);
-    } catch (err) {
-      handleFetchError(err, 'refreshing notes');
-    }
+    setNotesVersion(v => v + 1);
   };
 
   // Custom hooks
@@ -125,14 +120,11 @@ export default function ContactDetailPage() {
   useEffect(() => {
     if (!id) return;
 
-    let currentBlobUrl: string | null = null;
-
     const fetchData = async () => {
       try {
-        // First batch: parallel fetch of core data
-        const [contactData, notesData, user] = await Promise.all([
+        // First batch: parallel fetch of core data (notes load in their own effect below)
+        const [contactData, user] = await Promise.all([
           getContact(id, CONTACT_FIELDS),
-          getContactNotes(id),
           getCurrentUser().catch(err => {
             console.error('Error fetching current user preferences:', err);
             return null;
@@ -140,25 +132,7 @@ export default function ContactDetailPage() {
         ]);
 
         setContact(contactData);
-        setNotes(notesData.notes || []);
         setEnabledFields(resolveEnabledFields(user?.enabled_contact_fields ?? null));
-
-        // Only fetch profile picture if contact has one (avoid unnecessary 404)
-        if (contactData.photo) {
-          try {
-            const blob = await getContactProfilePicture(id);
-            if (blob) {
-              currentBlobUrl = URL.createObjectURL(blob);
-              setProfilePic(currentBlobUrl);
-            } else {
-              setProfilePic('');
-            }
-          } catch (err) {
-            console.error('Error fetching profile picture:', err);
-          }
-        } else {
-          setProfilePic('');
-        }
 
         setLoading(false);
       } catch (err) {
@@ -168,13 +142,71 @@ export default function ContactDetailPage() {
     };
 
     fetchData();
+  }, [id]);
+
+  // Starting a different contact means back to the first page.
+  useEffect(() => {
+    setNotesPage(1);
+  }, [id]);
+
+  // Paginated notes: 5 per page, filtered by search text and date range.
+  // The server applies the filters and returns the total for pagination.
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await getContactNotes(id, {
+          page: notesPage,
+          limit: NOTES_PER_PAGE,
+          search: notesSearch.trim() || undefined,
+          fromDate: notesFromDate || undefined,
+          toDate: notesToDate || undefined,
+        });
+        if (cancelled) return;
+        const list = data.notes || [];
+        setNotes(list);
+        setNotesTotal(data.total ?? list.length);
+        setNotesLimit(data.limit ?? NOTES_PER_PAGE);
+        // If the current page came back empty (a filter narrowed the results or
+        // the last item of this page was deleted), step back one page.
+        if (notesPage > 1 && list.length === 0) {
+          setNotesPage(p => Math.max(1, p - 1));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          handleFetchError(err, 'refreshing notes');
+        }
+      }
+    })();
 
     return () => {
-      if (currentBlobUrl) {
-        URL.revokeObjectURL(currentBlobUrl);
-      }
+      cancelled = true;
     };
-  }, [id]);
+  }, [id, notesPage, notesSearch, notesFromDate, notesToDate, notesVersion]);
+
+  const handleNotesSearchChange = (value: string) => {
+    setNotesSearchInput(value);
+    setNotesPage(1);
+  };
+
+  const handleNotesFromDateChange = (value: string) => {
+    setNotesFromDate(value);
+    setNotesPage(1);
+  };
+
+  const handleNotesToDateChange = (value: string) => {
+    setNotesToDate(value);
+    setNotesPage(1);
+  };
+
+  const handleNotesPageChange = (_: ChangeEvent<unknown>, value: number) => {
+    setNotesPage(value);
+  };
+
+  const notesHasFilters = notesSearchInput.trim().length > 0 || !!notesFromDate || !!notesToDate;
+  const notesTotalPages = Math.max(1, Math.ceil((notesTotal || 0) / (notesLimit || NOTES_PER_PAGE)));
 
   const validateBirthday = (value: string): boolean => {
     if (!value || value.trim() === '') return true;
@@ -395,22 +427,6 @@ export default function ContactDetailPage() {
     }
   };
 
-  const handleUploadProfilePicture = async (croppedImageBlob: Blob) => {
-    if (!id) return;
-
-    await uploadProfilePicture(id, croppedImageBlob);
-
-    // Refresh the profile picture
-    const blob = await getContactProfilePicture(id);
-    if (blob) {
-      // Revoke old URL to prevent memory leaks
-      if (profilePic) {
-        URL.revokeObjectURL(profilePic);
-      }
-      setProfilePic(URL.createObjectURL(blob));
-    }
-  };
-
   const handleCompaniesChange = (companies: Company[]) => {
     setContact((prev) => (prev ? { ...prev, companies } : prev));
   };
@@ -440,7 +456,6 @@ export default function ContactDetailPage() {
       {/* Contact Header Card */}
       <ContactHeader
         contact={contact}
-        profilePic={profilePic}
         editingProfile={editingProfile}
         profileValues={profileValues}
         onStartEditProfile={handleStartEditProfile}
@@ -448,7 +463,6 @@ export default function ContactDetailPage() {
         onSaveProfile={handleSaveProfile}
         onDeleteContact={handleDeleteContact}
         onProfileValueChange={setProfileValues}
-        onUploadProfilePicture={() => setProfilePictureDialogOpen(true)}
         onArchiveContact={contact.archived ? undefined : handleArchiveContact}
         onUnarchiveContact={contact.archived ? handleUnarchiveContact : undefined}
       />
@@ -483,35 +497,22 @@ export default function ContactDetailPage() {
 
         {/* Timeline */}
         <Card sx={{ flex: 1 }}>
-          <CardContent sx={{ py: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, gap: 0.5 }}>
-              <Button
-                onClick={handleOpenDeletedNotes}
-                size="small"
-                sx={{
-                  p: 0,
-                  minWidth: 0,
-                  color: 'text.disabled',
-                  textTransform: 'none',
-                  fontSize: '0.75rem',
-                }}
-              >
-                {t('contactDetail.viewDeletedNotes')}
-              </Button>
-              <Button
-                startIcon={<NoteIcon />}
-                onClick={() => setNoteDialogOpen(true)}
-                variant="outlined"
-                size="small"
-              >
-                {t('contactDetail.addNote')}
-              </Button>
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-            
+          <CardContent sx={{ py: 1.5 }}>
             <ContactTimeline
-              notes={[...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+              notes={notes}
               onEditNote={handleStartEditNote}
+              search={notesSearchInput}
+              onSearchChange={handleNotesSearchChange}
+              fromDate={notesFromDate}
+              toDate={notesToDate}
+              onFromDateChange={handleNotesFromDateChange}
+              onToDateChange={handleNotesToDateChange}
+              hasFilters={notesHasFilters}
+              page={notesPage}
+              totalPages={notesTotalPages}
+              onPageChange={handleNotesPageChange}
+              onAddNote={() => setNoteDialogOpen(true)}
+              onViewDeleted={handleOpenDeletedNotes}
             />
           </CardContent>
         </Card>
@@ -536,12 +537,6 @@ export default function ContactDetailPage() {
           allContacts={[]}
         />
       )}
-
-      <ProfilePictureUploadDialog
-        open={profilePictureDialogOpen}
-        onClose={() => setProfilePictureDialogOpen(false)}
-        onUpload={handleUploadProfilePicture}
-      />
 
       <Dialog
         open={archiveDialogOpen}

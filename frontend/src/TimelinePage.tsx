@@ -29,6 +29,17 @@ import NoteEditedInfo from './components/NoteEditedInfo';
 import { handleError } from './utils/errorHandler';
 import { useDateFormat } from './DateFormatProvider';
 
+const NOTES_PER_PAGE = 15;
+
+// ISO date (YYYY-MM-DD) a whole number of months back from today, local time.
+function isoMonthsAgo(months: number): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - months);
+  const mm = `${d.getMonth() + 1}`.padStart(2, '0');
+  const dd = `${d.getDate()}`.padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 const TimelinePage: React.FC = () => {
   const { t } = useTranslation();
   const { formatDate, getDatePlaceholder } = useDateFormat();
@@ -36,9 +47,8 @@ const TimelinePage: React.FC = () => {
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [page, setPage] = useState(1);
-  const [fromDate, setFromDate] = useState('');
+  const [fromDate, setFromDate] = useState(() => isoMonthsAgo(2));
   const [toDate, setToDate] = useState('');
-  const NOTES_PER_PAGE = 25;
 
   const notesParams = useMemo(
     () => ({
@@ -180,16 +190,25 @@ const TimelinePage: React.FC = () => {
                   </TimelineDot>
                   {index < notes.length - 1 && <TimelineConnector />}
                 </TimelineSeparator>
-                <TimelineContent sx={{ flex: 0.8 }}>
+                <TimelineContent sx={{ flex: 0.8, minWidth: 0 }}>
                   <Paper elevation={2} sx={{ p: 2 }}>
                     <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                      <Box sx={{ flex: 1 }}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
                         {note.title && (
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, overflowWrap: 'anywhere' }}>
                             {note.title}
                           </Typography>
                         )}
-                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            whiteSpace: 'pre-wrap',
+                            overflowWrap: 'anywhere',
+                            wordBreak: 'break-word',
+                            maxHeight: 260,
+                            overflowY: 'auto',
+                          }}
+                        >
                           {note.content}
                         </Typography>
                         <NoteEditedInfo note={note} />
@@ -203,7 +222,28 @@ const TimelinePage: React.FC = () => {
                                 e.preventDefault();
                                 navigate(`/contacts/${note.contact!.ID}`);
                               }}
-                              sx={{ cursor: 'pointer' }}
+                              sx={{
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                px: 1,
+                                py: 0.5,
+                                borderRadius: '16px',
+                                backgroundColor: 'rgba(76, 175, 80, 0.14)',
+                                color: '#2e7d32',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                transition: 'background-color 0.2s, color 0.2s',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(76, 175, 80, 0.26)',
+                                  textDecoration: 'underline'
+                                },
+                                '&:focus-visible': {
+                                  outline: '2px solid rgba(76, 175, 80, 0.5)',
+                                  outlineOffset: 2,
+                                  borderRadius: '16px'
+                                }
+                              }}
                             >
                               {contactName}
                             </Link>

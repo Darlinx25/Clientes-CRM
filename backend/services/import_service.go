@@ -198,7 +198,6 @@ var headerToField = map[string]string{
 	"food": "food_preference", "food preference": "food_preference", "food_preference": "food_preference", "dietary": "food_preference", "diet": "food_preference",
 	"work": "work_information", "work_information": "work_information", "job": "work_information", "occupation": "work_information",
 	"contact information": "contact_information", "contact_information": "contact_information", "other contact": "contact_information",
-	"circles": "circles", "groups": "circles", "tags": "circles", "category": "circles", "categories": "circles", "labels": "circles",
 	// German
 	"vorname":  "firstname",
 	"nachname": "lastname", "familienname": "lastname",
@@ -217,7 +216,6 @@ var headerToField = map[string]string{
 	"firma":      "organization", "unternehmen": "organization",
 	"abteilung": "department",
 	"beruf":     "work_information", "arbeit": "work_information",
-	"kreise": "circles", "gruppen": "circles",
 }
 
 // indexedHeaderRe matches Google-style grouped columns, e.g. "E-mail 1 - Value",
@@ -372,9 +370,6 @@ func ContactToPreviewMap(contact *models.Contact) map[string]interface{} {
 	set("job_title", contact.JobTitle)
 	set("role", contact.Role)
 	set("work_information", contact.WorkInformation)
-	if len(contact.Circles) > 0 {
-		preview["circles"] = strings.Join(contact.Circles, ", ")
-	}
 	return preview
 }
 
@@ -654,31 +649,6 @@ func (idx *DuplicateIndex) Detect(firstname, lastname, email, phone string) *mod
 	return nil
 }
 
-// ParseCircles parses circles from a separated string
-func ParseCircles(input string) []string {
-	if input == "" {
-		return nil
-	}
-
-	// Normalize ":::" separator to a comma so the splitter below handles it.
-	normalized := strings.ReplaceAll(input, ":::", ",")
-
-	var circles []string
-	parts := strings.FieldsFunc(normalized, func(r rune) bool {
-		return r == ',' || r == ';'
-	})
-
-	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
-		if trimmed == "" || strings.HasPrefix(trimmed, "*") {
-			continue
-		}
-		circles = append(circles, trimmed)
-	}
-
-	return circles
-}
-
 // addrEntry accumulates the components of one structured address while building a row.
 type addrEntry struct {
 	label   string
@@ -800,10 +770,6 @@ func BuildContactFromRow(userID uint, headers []string, row []string, mappings [
 			contact.WorkInformation = v
 		case "contact_information":
 			contact.ContactInformation = v
-		case "circles":
-			if v != "" {
-				contact.Circles = ParseCircles(v)
-			}
 		case "email":
 			putValue(emailVals, &emailGroups, m.Group, v)
 		case "email_label":
@@ -935,9 +901,6 @@ func MergeImportedContact(existing *models.Contact, incoming *models.Contact) {
 	if incoming.ContactInformation != "" {
 		existing.ContactInformation = incoming.ContactInformation
 	}
-	if len(incoming.Circles) > 0 {
-		existing.Circles = incoming.Circles
-	}
 	// Multi-valued and structured vCard fields
 	if len(incoming.Emails) > 0 {
 		existing.Emails = incoming.Emails
@@ -1023,17 +986,6 @@ func CreateMergeNote(db *gorm.DB, userID uint, contactID uint, original *models.
 				changes = append(changes, fmt.Sprintf("- %s: %s → %s", info.label, info.original, newVal))
 			} else {
 				changes = append(changes, fmt.Sprintf("- %s: (empty) → %s", info.label, newVal))
-			}
-		}
-	}
-
-	if newCirclesStr := GetStringField(newValues, "circles"); newCirclesStr != "" {
-		oldCircles := strings.Join(original.Circles, ", ")
-		if oldCircles != newCirclesStr {
-			if oldCircles != "" {
-				changes = append(changes, fmt.Sprintf("- Circles: %s → %s", oldCircles, newCirclesStr))
-			} else {
-				changes = append(changes, fmt.Sprintf("- Circles: (empty) → %s", newCirclesStr))
 			}
 		}
 	}

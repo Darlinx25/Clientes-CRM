@@ -10,24 +10,20 @@ describe('resolveNetworkFilters', () => {
 
   test('restores a full stored filter set', () => {
     const stored = JSON.stringify({
-      selectedCircle: 'Family',
       showRelationships: true,
       showActivities: false,
-      showCircles: true,
     });
     expect(resolveNetworkFilters(stored)).toEqual({
-      selectedCircle: 'Family',
       showRelationships: true,
       showActivities: false,
-      showCircles: true,
     });
   });
 
   test('falls back per field when the stored object is partial', () => {
-    const stored = JSON.stringify({ showCircles: true });
+    const stored = JSON.stringify({ showActivities: true });
     expect(resolveNetworkFilters(stored)).toEqual({
       ...DEFAULT_NETWORK_FILTERS,
-      showCircles: true,
+      showActivities: true,
     });
   });
 
@@ -38,7 +34,7 @@ describe('resolveNetworkFilters', () => {
 
   test('does not share state between calls', () => {
     const first = resolveNetworkFilters(null);
-    first.showCircles = true;
-    expect(resolveNetworkFilters(null).showCircles).toBe(false);
+    first.showActivities = true;
+    expect(resolveNetworkFilters(null).showActivities).toBe(false);
   });
 });

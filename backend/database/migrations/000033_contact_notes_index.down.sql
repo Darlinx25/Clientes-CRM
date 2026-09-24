@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_notes_contact_date_id;

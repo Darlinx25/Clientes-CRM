@@ -20,13 +20,17 @@ export interface Company {
   ID: number;
   contact_id: number;
   company_number: string;
+  custom_type?: string;
   types: CompanyType[];
 }
 
-// Payload for creating/updating a company (número de empresa).
+// Payload for creating/updating a company (número de empresa). custom_type is
+// the free-text "Otro" exception stored on the company itself; providing it
+// does not add a new shared CompanyType.
 export interface CompanyInput {
   company_number: string;
   type_ids: number[];
+  custom_type?: string;
 }
 
 export interface Contact {
@@ -44,7 +48,6 @@ export interface Contact {
   food_preference?: string;
   work_information?: string;
   contact_information?: string;
-  circles?: string[];
   photo_thumbnail?: string;
   custom_fields?: Record<string, string>;
   archived?: boolean;
@@ -91,7 +94,6 @@ export interface GetContactsParams {
   page?: number;
   limit?: number;
   search?: string;
-  circle?: string;
   sort?: string;
   order?: string;
   includeArchived?: boolean;
@@ -102,7 +104,7 @@ export interface GetContactsParams {
 export async function getContacts(
   params: GetContactsParams
 ): Promise<ContactsResponse> {
-  const { page = 1, limit = 25, search = '', circle = '', sort, order, includeArchived, archived } = params;
+  const { page = 1, limit = 25, search = '', sort, order, includeArchived, archived } = params;
 
   const queryParams = new URLSearchParams({
     page: page.toString(),
@@ -110,13 +112,12 @@ export async function getContacts(
   });
 
   if (search) queryParams.append('search', search);
-  if (circle) queryParams.append('circle', circle);
   if (sort) queryParams.append('sort', sort);
   if (order) queryParams.append('order', order);
   if (includeArchived) queryParams.append('include_archived', 'true');
   if (archived !== undefined) queryParams.append('archived', archived.toString());
 
-  queryParams.append('fields', 'ID,firstname,lastname,nickname,circles,photo_thumbnail,archived');
+  queryParams.append('fields', 'ID,firstname,lastname,nickname,photo_thumbnail,archived');
 
   const response = await apiFetch(
     `${API_BASE_URL}/contacts?${queryParams.toString()}`,
@@ -247,22 +248,6 @@ export async function uploadProfilePicture(
   if (!response.ok) {
     throw await parseErrorResponse(response);
   }
-}
-
-// Get all circles
-export async function getCircles(): Promise<string[]> {
-  const response = await apiFetch(
-    `${API_BASE_URL}/contacts/circles`,
-    { headers: getAuthHeaders() }
-  );
-
-  if (!response.ok) {
-    throw await parseErrorResponse(response);
-  }
-
-  const data = await response.json();
-  // Backend returns array directly, not wrapped in object
-  return Array.isArray(data) ? data : [];
 }
 
 // Get random contacts (returns 5 contacts)

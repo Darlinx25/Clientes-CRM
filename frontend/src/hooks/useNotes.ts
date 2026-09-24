@@ -44,12 +44,13 @@ export function useNotes(
       }
 
       if (contactId) {
-        const data = await getContactNotes(contactId);
+        const fetchParams: GetNotesParams = { page: paramPage, limit: paramLimit, search, fromDate, toDate };
+        const data = await getContactNotes(contactId, fetchParams);
         const normalized = Array.isArray(data) ? data : data.notes || [];
         setNotes(normalized);
-        setTotal(normalized.length);
-        setPageState(1);
-        setLimit(normalized.length || paramLimit || 25);
+        setTotal(Array.isArray(data) ? normalized.length : (data.total ?? normalized.length));
+        setPageState(Array.isArray(data) ? 1 : (data.page ?? paramPage ?? 1));
+        setLimit(Array.isArray(data) ? (normalized.length || paramLimit || 25) : (data.limit ?? (paramLimit || 25)));
       } else {
         const fetchParams: GetNotesParams = { page: paramPage, limit: paramLimit, search, fromDate, toDate };
         const data = await getAllNotes(fetchParams);

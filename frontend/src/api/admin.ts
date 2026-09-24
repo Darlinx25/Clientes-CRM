@@ -73,18 +73,6 @@ export async function updateUser(
   return response.json();
 }
 
-// Trigger reminder emails manually (admin only)
-export async function triggerReminders(): Promise<void> {
-  const response = await apiFetch(`${API_BASE_URL}/admin/trigger-reminders`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-  });
-
-  if (!response.ok) {
-    throw await parseErrorResponse(response);
-  }
-}
-
 /**
  * Delete a user (admin only)
  */

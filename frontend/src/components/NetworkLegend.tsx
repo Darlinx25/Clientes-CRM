@@ -2,12 +2,11 @@ import { Box, Typography, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 interface NetworkLegendProps {
-  showCircles?: boolean;
   showActivities?: boolean;
   showRelationships?: boolean;
 }
 
-export default function NetworkLegend({ showCircles, showActivities, showRelationships }: NetworkLegendProps) {
+export default function NetworkLegend({ showActivities, showRelationships }: NetworkLegendProps) {
   const theme = useTheme();
   const { t } = useTranslation();
 
@@ -22,11 +21,6 @@ export default function NetworkLegend({ showCircles, showActivities, showRelatio
       label: t('network.legend.activities'),
       type: 'line',
     }] : []),
-    ...(showCircles ? [{
-      color: theme.palette.warning.main,
-      label: t('network.legend.circleEdge'),
-      type: 'line',
-    }] : []),
     {
       color: theme.palette.primary.main,
       label: t('network.legend.contact'),
@@ -38,12 +32,6 @@ export default function NetworkLegend({ showCircles, showActivities, showRelatio
       label: t('network.legend.activity'),
       type: 'circle',
       size: 8,
-    }] : []),
-    ...(showCircles ? [{
-      color: theme.palette.warning.main,
-      label: t('network.legend.circle'),
-      type: 'circle',
-      size: 10,
     }] : []),
   ];
 

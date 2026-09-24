@@ -19,7 +19,7 @@ import (
 
 func ListApiTokens(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -48,7 +48,7 @@ func ListApiTokens(c *gin.Context) {
 
 func CreateApiToken(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -93,7 +93,7 @@ func CreateApiToken(c *gin.Context) {
 
 func RevokeApiToken(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}

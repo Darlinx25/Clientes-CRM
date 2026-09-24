@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -18,12 +18,17 @@ import {
 import { SelectChangeEvent } from '@mui/material/Select';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { changePassword } from './api/auth';
+import { getCurrentUser } from './api/admin';
+import { isAdmin } from './auth';
 import { ThemePreference, useThemePreference } from './AppThemeProvider';
+import UserManagementSection from './components/UserManagementSection';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { preference: themePreference, setPreference: setThemePreference } = useThemePreference();
+  const [username, setUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,6 +39,13 @@ export default function SettingsPage() {
   const handleThemeChange = (event: SelectChangeEvent<ThemePreference>) => {
     setThemePreference(event.target.value as ThemePreference);
   };
+
+  // Show which account is changing its password
+  useEffect(() => {
+    getCurrentUser()
+      .then(user => setUsername(user.username))
+      .catch(() => setUsername(''));
+  }, []);
 
   const handlePasswordChange = async (event: FormEvent) => {
     event.preventDefault();
@@ -111,6 +123,12 @@ export default function SettingsPage() {
 
           <form onSubmit={handlePasswordChange}>
             <Stack spacing={1.5}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <AccountCircleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                <Typography variant="body2" color="text.secondary">
+                  {t('settings.password.username')}: <strong>{username}</strong>
+                </Typography>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 {t('settings.password.description')}
               </Typography>
@@ -150,6 +168,8 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {isAdmin() && <UserManagementSection />}
     </Box>
   );
 }

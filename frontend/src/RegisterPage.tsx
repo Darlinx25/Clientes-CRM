@@ -14,7 +14,7 @@ import {
 
 export default function RegisterPage() {
   const { t } = useTranslation();
-  const [email, setEmail] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
@@ -28,12 +28,15 @@ export default function RegisterPage() {
     setError('');
     setSuccess('');
     try {
+      if (password !== confirmPassword) {
+        throw new Error(t('register.passwordMismatch'));
+      }
       const response = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, username }),
+        body: JSON.stringify({ password, username, confirm_password: confirmPassword }),
       });
       if (!response.ok) {
         const data = await response.json();
@@ -83,20 +86,21 @@ export default function RegisterPage() {
               fullWidth
             />
             <TextField
-              label={t('register.email')}
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              fullWidth
-            />
-            <TextField
               label={t('register.password')}
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
               fullWidth
+            />
+            <TextField
+              label={t('register.confirmPassword')}
+              type="password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              required
+              fullWidth
+              error={password !== '' && confirmPassword !== '' && password !== confirmPassword}
             />
             {error && <Alert severity="error">{error}</Alert>}
             {success && <Alert severity="success">{success}</Alert>}

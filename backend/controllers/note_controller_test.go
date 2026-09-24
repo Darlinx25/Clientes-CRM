@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"meerkat/middleware"
 	"meerkat/models"
 	"net/http"
@@ -45,6 +46,9 @@ func TestGetContactNotes(t *testing.T) {
 
 	var responseBody struct {
 		Notes []models.Note `json:"notes"`
+		Total int64         `json:"total"`
+		Page  int           `json:"page"`
+		Limit int           `json:"limit"`
 	}
 	json.Unmarshal(w.Body.Bytes(), &responseBody)
 
@@ -53,6 +57,67 @@ func TestGetContactNotes(t *testing.T) {
 	// Notes are ordered by date DESC, id DESC, so the later note comes first.
 	assert.Equal(t, note2.Content, responseBody.Notes[0].Content)
 	assert.Equal(t, note1.Content, responseBody.Notes[1].Content)
+	assert.EqualValues(t, 2, responseBody.Total)
+	assert.Equal(t, 1, responseBody.Page)
+	assert.Equal(t, 25, responseBody.Limit)
+}
+
+func TestGetContactNotesPaginationAndFilters(t *testing.T) {
+	db, router := setupRouter()
+
+	var user models.User
+	db.First(&user)
+
+	router.GET("/contacts/:id/notes", GetNotesForContact)
+
+	contact := models.Contact{
+		UserID:    user.ID,
+		Firstname: "Filter",
+		Lastname:  "Me",
+	}
+	db.Create(&contact)
+
+	base := time.Now()
+	for i := 0; i < 8; i++ {
+		db.Create(&models.Note{
+			UserID:    user.ID,
+			Content:   fmt.Sprintf("note number %d", i),
+			Date:      base.Add(-time.Duration(i) * 24 * time.Hour),
+			ContactID: &contact.ID,
+		})
+	}
+
+	// First page of 5 returns the 5 most recent notes plus the total.
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/contacts/%d/notes?page=1&limit=5", contact.ID), nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var page1 struct {
+		Notes []models.Note `json:"notes"`
+		Total int64         `json:"total"`
+		Page  int           `json:"page"`
+		Limit int           `json:"limit"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &page1)
+	assert.Len(t, page1.Notes, 5)
+	assert.EqualValues(t, 8, page1.Total)
+	assert.Equal(t, 1, page1.Page)
+	assert.Equal(t, 5, page1.Limit)
+
+	// Search narrows to a single note; the date window excludes older notes.
+	req2, _ := http.NewRequest("GET", fmt.Sprintf("/contacts/%d/notes?search=number%%205&fromDate=%s", contact.ID, base.Add(-5*24*time.Hour).Format("2006-01-02")), nil)
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	var searchResult struct {
+		Notes []models.Note `json:"notes"`
+		Total int64         `json:"total"`
+	}
+	json.Unmarshal(w2.Body.Bytes(), &searchResult)
+	assert.Len(t, searchResult.Notes, 1)
+	assert.EqualValues(t, 1, searchResult.Total)
 }
 
 func TestCreateContactNote(t *testing.T) {

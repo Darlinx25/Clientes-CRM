@@ -76,6 +76,7 @@ func CreateCompany(c *gin.Context) {
 		ContactID:     contactID,
 		CompanyNumber: companyInput.CompanyNumber,
 		Aportacion:    companyInput.Aportacion,
+		CustomType:    companyInput.CustomType,
 		Types:         resolveCompanyTypes(db, companyInput.TypeIDs),
 	}
 
@@ -125,6 +126,7 @@ func UpdateCompany(c *gin.Context) {
 
 	company.CompanyNumber = companyInput.CompanyNumber
 	company.Aportacion = companyInput.Aportacion
+	company.CustomType = companyInput.CustomType
 
 	if err := db.Save(&company).Error; err != nil {
 		apperrors.AbortWithError(c, apperrors.ErrDatabase("Failed to update company").WithError(err))

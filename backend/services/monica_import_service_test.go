@@ -33,7 +33,6 @@ func monicaTestContact() monica.Contact {
 	mc.Information.HowYouMet.GeneralInformation = strPtr("Met at a lecture")
 	mc.Information.Avatar.URL = strPtr("https://monica.example.com/storage/avatar.jpg")
 	mc.Information.Avatar.Source = strPtr("photo")
-	mc.Tags = []monica.Tag{{Name: "friends"}, {Name: "work"}}
 	mc.Addresses = []monica.Address{{
 		Name: "Home", Street: "12 St James Square", City: "London", PostalCode: "SW1",
 		Country: &struct {
@@ -83,7 +82,6 @@ func TestMapMonicaContactFullMapping(t *testing.T) {
 	assert.Equal(t, "Vegetarian", c.FoodPreference)
 	assert.Equal(t, "Met at a lecture", c.HowWeMet)
 	assert.Equal(t, "Mathematician", c.ContactInformation)
-	assert.Equal(t, []string{"friends", "work"}, c.Circles)
 	assert.Equal(t, "yes", c.CustomFields["Starred"])
 
 	assert.Len(t, c.Emails, 1)

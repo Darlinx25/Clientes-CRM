@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -233,15 +235,18 @@ var (
 	// Rate limiter for authentication endpoints (login, register)
 	// Higher limits since per-account lockout handles brute force protection
 	// 2 requests per second with burst of 50 (allows rapid legitimate logins, e.g., E2E tests)
-	authLimiter = NewIPRateLimiter(rate.Every(500*time.Millisecond), 50)
+	authLimiter = NewIPRateLimiter(rate.Every(envDuration("AUTH_RATE_MIN_INTERVAL", 500*time.Millisecond)), envInt("AUTH_RATE_BURST", 50))
 
 	// General API rate limiter
 	// 100 requests per minute with burst of 500
-	apiLimiter = NewIPRateLimiter(rate.Every(600*time.Millisecond), 500)
+	// Values can be raised for a LAN deployment where every user has their own
+	// IP anyway: set API_RATE_MIN_INTERVAL=0s to disable throttling (useful to
+	// load-test true concurrency from a single machine).
+	apiLimiter = NewIPRateLimiter(rate.Every(envDuration("API_RATE_MIN_INTERVAL", 600*time.Millisecond)), envInt("API_RATE_BURST", 500))
 
 	// CardDAV rate limiter — higher burst to accommodate bulk sync from clients like vdirsyncer
 	// 10 requests per second sustained, burst of 2500 for initial address book sync
-	cardDAVLimiter = NewIPRateLimiter(rate.Every(100*time.Millisecond), 2500)
+	cardDAVLimiter = NewIPRateLimiter(rate.Every(envDuration("CARDDAV_RATE_MIN_INTERVAL", 100*time.Millisecond)), envInt("CARDDAV_RATE_BURST", 2500))
 
 	// Per-account rate limiter for login attempts
 	// Tracks failed attempts per username/email with exponential backoff
@@ -253,6 +258,27 @@ var (
 	// cleanupMu protects cleanupDone from concurrent access
 	cleanupMu sync.Mutex
 )
+
+// envDuration reads a duration env var, falling back to def. An interval <= 0
+// maps to rate.Inf (no throttling).
+func envDuration(key string, def time.Duration) time.Duration {
+	if v := os.Getenv(key); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
+	}
+	return def
+}
+
+// envInt reads an int env var, falling back to def.
+func envInt(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+	}
+	return def
+}
 
 // GetAccountRateLimiter returns the global account rate limiter for login attempts
 func GetAccountRateLimiter() *AccountRateLimiter {

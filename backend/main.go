@@ -11,9 +11,12 @@ import (
 	"meerkat/middleware"
 	"meerkat/routes"
 	"meerkat/services"
+	"meerkat/web"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"time"
@@ -24,6 +27,12 @@ import (
 )
 
 func main() {
+	// Run gin in release mode to keep logging and CPU usage light on small
+	// machines unless GIN_MODE is explicitly set.
+	if os.Getenv("GIN_MODE") == "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// Initialize logger first
 	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel == "" {
@@ -55,6 +64,13 @@ func main() {
 	db, err := database.InitDB(cfg.DBPath)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize database")
+	}
+
+	logger.Info().Msg("Seeding admin user and unifying data...")
+	if err := database.SeedAdminUser(db); err != nil {
+		logger.Error().Err(err).Msg("Failed to seed admin user")
+	} else if err := database.ReassignContentToAdmin(db); err != nil {
+		logger.Error().Err(err).Msg("Failed to unify data under admin user")
 	}
 
 	logger.Info().Msg("Initializing i18n translations...")
@@ -162,6 +178,21 @@ func main() {
 	// Register all routes from routes.go
 	routes.RegisterRoutes(r, cfg, db, oidcProvider)
 
+	// When the frontend is embedded in the binary (web_embed build), fall back
+	// to the SPA. API/CardDAV paths keep their JSON 404 so the client never
+	// receives HTML for a bad API call.
+	if web.Available() {
+		r.NoRoute(func(c *gin.Context) {
+			p := c.Request.URL.Path
+			if strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/health") ||
+				strings.HasPrefix(p, "/carddav") || strings.HasPrefix(p, "/.well-known/") {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+				return
+			}
+			web.Handler().ServeHTTP(c.Writer, c.Request)
+		})
+	}
+
 	// Create HTTP server with timeout configuration
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
@@ -191,6 +222,12 @@ func main() {
 
 	logger.Info().Msg("Server is ready to handle requests")
 
+	if host := lanIPv4(); host != "" {
+		logger.Info().Msgf("Open in your browser: http://localhost:%s  (other computers on the network: http://%s:%s)", cfg.Port, host, cfg.Port)
+	} else {
+		logger.Info().Msgf("Open in your browser: http://localhost:%s", cfg.Port)
+	}
+
 	// Block until we receive a shutdown signal
 	<-quit
 	logger.Info().Msg("Shutting down server...")
@@ -218,4 +255,30 @@ func main() {
 	}
 
 	logger.Info().Msg("Server exited gracefully")
+}
+
+// lanIPv4 returns the first non-loopback IPv4 address of this machine, used to
+// print the URL that other computers on the same network can open.
+func lanIPv4() string {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return ""
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			if ipNet, ok := addr.(*net.IPNet); ok {
+				if ip4 := ipNet.IP.To4(); ip4 != nil {
+					return ip4.String()
+				}
+			}
+		}
+	}
+	return ""
 }

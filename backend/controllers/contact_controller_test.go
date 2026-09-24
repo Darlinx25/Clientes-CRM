@@ -402,7 +402,6 @@ func TestCreateContactWithAllFields(t *testing.T) {
 		FoodPreference:     "Vegetarian, loves Italian cuisine",
 		WorkInformation:    "Senior Software Engineer at TechCorp Inc.",
 		ContactInformation: "Prefers email, available weekdays 9-5",
-		Circles:            []string{"Friends", "Work", "Tech Community"},
 	}
 
 	jsonValue, _ := json.Marshal(fullContact)
@@ -433,8 +432,6 @@ func TestCreateContactWithAllFields(t *testing.T) {
 	assert.Equal(t, "Vegetarian, loves Italian cuisine", contact["food_preference"])
 	assert.Equal(t, "Senior Software Engineer at TechCorp Inc.", contact["work_information"])
 	assert.Equal(t, "Prefers email, available weekdays 9-5", contact["contact_information"])
-	circles := contact["circles"].([]any)
-	assert.Len(t, circles, 3)
 }
 
 func TestCreateContactWithBirthdayVariations(t *testing.T) {
@@ -558,34 +555,6 @@ func TestDeleteContact(t *testing.T) {
 	var responseBody map[string]string
 	json.Unmarshal(w.Body.Bytes(), &responseBody)
 	assert.Equal(t, "Contact deleted", responseBody["message"])
-}
-
-func TestGetCircles(t *testing.T) {
-	db, router := setupRouter()
-
-	var user models.User
-	db.First(&user)
-
-	router.GET("/contacts/circles", GetCircles)
-
-	contacts := []models.Contact{
-		{UserID: user.ID, Firstname: "Alice", Lastname: "Johnson", Circles: []string{"Friends", "Family"}},
-		{UserID: user.ID, Firstname: "Bob", Lastname: "Smith", Circles: []string{"Friends", "Work"}},
-	}
-	db.Create(&contacts[0])
-	db.Create(&contacts[1])
-
-	// Make the request to get circles
-	req, _ := http.NewRequest("GET", "/contacts/circles", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var responseBody []string
-	json.Unmarshal(w.Body.Bytes(), &responseBody)
-	assert.Equal(t, int(3), len(responseBody))
-	assert.ElementsMatch(t, []string{"Friends", "Family", "Work"}, responseBody)
 }
 
 func TestDeleteContactCleansUpPhotos(t *testing.T) {

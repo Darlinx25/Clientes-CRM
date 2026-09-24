@@ -216,7 +216,6 @@ export type {
   UploadPhotoResponse,
   HealthCheckResponse,
   SearchResponse,
-  GetCirclesResponse,
   StatisticsResponse,
   ExportResponse,
   ImportResponse,

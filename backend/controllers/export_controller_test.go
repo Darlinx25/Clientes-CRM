@@ -32,7 +32,6 @@ func TestExportData(t *testing.T) {
 		FoodPreference:     "Vegetarian",
 		WorkInformation:    "Software Engineer",
 		ContactInformation: "Prefers email",
-		Circles:            []string{"Friends", "Work"},
 	}
 	db.Create(&contact1)
 
@@ -41,7 +40,6 @@ func TestExportData(t *testing.T) {
 		Firstname: "Bob",
 		Lastname:  "Smith",
 		Email:     "bob@example.com",
-		Circles:   []string{"Family"},
 	}
 	db.Create(&contact2)
 
@@ -119,7 +117,6 @@ func TestExportData(t *testing.T) {
 	assert.Contains(t, body, "alice@example.com")
 	assert.Contains(t, body, "Bob")
 	assert.Contains(t, body, "Smith")
-	assert.Contains(t, body, "Friends; Work")
 
 	// Verify relationships section
 	assert.Contains(t, body, "=== RELATIONSHIPS ===")

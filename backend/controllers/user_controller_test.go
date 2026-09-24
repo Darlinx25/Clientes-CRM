@@ -31,9 +31,10 @@ func TestRegisterUser(t *testing.T) {
 
 	// Create a new user using the registration DTO
 	newUser := models.UserRegistrationInput{
-		Username: "testuser",
-		Email:    "testuser@example.com",
-		Password: strongPassword,
+		Username:        "testuser",
+		Email:           "testuser@example.com",
+		Password:        strongPassword,
+		ConfirmPassword: strongPassword,
 	}
 
 	jsonValue, _ := json.Marshal(newUser)
@@ -48,6 +49,67 @@ func TestRegisterUser(t *testing.T) {
 	var responseBody map[string]string
 	json.Unmarshal(w.Body.Bytes(), &responseBody)
 	assert.Equal(t, "User registered successfully", responseBody["message"])
+}
+
+func TestRegisterUser_WithoutEmail(t *testing.T) {
+	db, router := setupRouter()
+	cfg := &config.Config{}
+	router.POST("/register", middleware.ValidateJSONMiddleware(&models.UserRegistrationInput{}), RegisterUser(cfg))
+
+	newUser := models.UserRegistrationInput{
+		Username:        "noemailuser",
+		Password:        strongPassword,
+		ConfirmPassword: strongPassword,
+	}
+
+	jsonValue, _ := json.Marshal(newUser)
+	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonValue))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var stored models.User
+	db.Where("username = ?", "noemailuser").First(&stored)
+	assert.Equal(t, services.PlaceholderEmail("noemailuser"), stored.Email)
+	assert.False(t, services.HasUsableEmail(stored.Email))
+
+	// A second user without email must not collide on the UNIQUE email column.
+	newUser2 := models.UserRegistrationInput{
+		Username:        "noemailuser2",
+		Password:        strongPasswordAlt,
+		ConfirmPassword: strongPasswordAlt,
+	}
+	jsonValue2, _ := json.Marshal(newUser2)
+	req2, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonValue2))
+	req2.Header.Set("Content-Type", "application/json")
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusCreated, w2.Code)
+}
+
+func TestRegisterUser_PasswordMismatch(t *testing.T) {
+	_, router := setupRouter()
+	cfg := &config.Config{}
+	router.POST("/register", middleware.ValidateJSONMiddleware(&models.UserRegistrationInput{}), RegisterUser(cfg))
+
+	newUser := models.UserRegistrationInput{
+		Username:        "mismatchuser",
+		Email:           "mismatch@example.com",
+		Password:        strongPassword,
+		ConfirmPassword: strongPasswordAlt,
+	}
+
+	jsonValue, _ := json.Marshal(newUser)
+	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonValue))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestRegisterUser_InvalidInput(t *testing.T) {

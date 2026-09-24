@@ -1,21 +1,16 @@
 // Persistence for the network page's filter controls to save user selection
 
 export interface NetworkFilters {
-  /** Circle name to restrict the graph to; '' means "all circles". */
-  selectedCircle: string;
   showRelationships: boolean;
   showActivities: boolean;
-  showCircles: boolean;
 }
 
 export const NETWORK_FILTERS_STORAGE_KEY = 'network-filters';
 
 // Defaults for a user who has never touched the controls
 export const DEFAULT_NETWORK_FILTERS: NetworkFilters = {
-  selectedCircle: '',
   showRelationships: true,
   showActivities: true,
-  showCircles: false,
 };
 
 // Resolves the stored value into a concrete filter set

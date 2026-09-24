@@ -6,11 +6,14 @@ import { useDateFormat } from '../DateFormatProvider';
 
 interface NoteEditedInfoProps {
   note: Note;
+  showEditorName?: boolean;
 }
 
 // Discreet "edited" indicator: shows the edit date and lets the user view the
-// note's original content. Renders nothing for untouched notes.
-export default function NoteEditedInfo({ note }: NoteEditedInfoProps) {
+// note's original content. Renders nothing for untouched notes. When
+// showEditorName is set and the note was edited by someone other than its
+// author, the editor's name is shown too.
+export default function NoteEditedInfo({ note, showEditorName }: NoteEditedInfoProps) {
   const { t } = useTranslation();
   const { formatDate } = useDateFormat();
   const [showOriginal, setShowOriginal] = useState(false);
@@ -23,11 +26,26 @@ export default function NoteEditedInfo({ note }: NoteEditedInfoProps) {
 
   if (!original || !note.UpdatedAt) return null;
 
+  const editorName =
+    showEditorName &&
+    note.edited_by_name &&
+    note.author_name &&
+    note.edited_by_name !== note.author_name
+      ? note.edited_by_name
+      : undefined;
+
+  const editedDate = formatDate(note.UpdatedAt);
+
   return (
     <Box sx={{ mt: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography variant="caption" color="text.secondary">
-          {t('noteEdited.edited', 'Editada')} {formatDate(note.UpdatedAt)}
+          {editorName
+            ? t('noteEdited.editedBy', 'Editada {{date}} por {{name}}', {
+                date: editedDate,
+                name: editorName,
+              })
+            : `${t('noteEdited.edited', 'Editada')} ${editedDate}`}
         </Typography>
         <Link
           component="button"

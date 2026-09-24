@@ -21,7 +21,7 @@ func GetGraph(c *gin.Context) {
 
 	// 1. Fetch all contacts (minimal fields for performance), excluding archived
 	var contacts []models.Contact
-	if err := db.Select("id", "firstname", "lastname", "photo_thumbnail", "circles").
+	if err := db.Select("id", "firstname", "lastname", "photo_thumbnail").
 		Where("user_id = ? AND archived = ?", userID, false).
 		Find(&contacts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch contacts"})
@@ -59,7 +59,6 @@ func GetGraph(c *gin.Context) {
 			Type:           "contact",
 			Label:          label,
 			PhotoThumbnail: contact.PhotoThumbnail,
-			Circles:        contact.Circles,
 		})
 	}
 

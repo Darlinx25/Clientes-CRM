@@ -4,28 +4,45 @@ import (
 	"errors"
 	"meerkat/config"
 	"meerkat/models"
+	"meerkat/passwords"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var ErrPasswordTooLong = errors.New("password must not exceed 72 characters")
 
+// AdminUsername is the shared account that owns the CRM's content. All client
+// data lives under it after startup unification, which is what makes the data
+// visible to every user.
+const AdminUsername = "admin"
+
+// noEmailSuffix marks accounts registered without an email address. The email
+// column is UNIQUE NOT NULL, so a deterministic placeholder derived from the
+// unique username satisfies both constraints without a table rebuild.
+const noEmailSuffix = "local.invalid"
+
+// PlaceholderEmail returns a stable, unique, non-routable email for users who
+// registered without providing one.
+func PlaceholderEmail(username string) string {
+	return strings.ToLower(username) + "@" + noEmailSuffix
+}
+
+// HasUsableEmail reports whether an account carries a real, deliverable email
+// address (as opposed to an empty or placeholder one).
+func HasUsableEmail(email string) bool {
+	email = strings.TrimSpace(strings.ToLower(email))
+	return email != "" && !strings.HasSuffix(email, "@"+noEmailSuffix)
+}
+
 func HashPassword(password string) (string, error) {
-	if password == "" {
-		return "", errors.New("password cannot be empty")
-	}
+	return passwords.HashPassword(password)
+}
 
-	if len([]byte(password)) > 72 {
-		return "", ErrPasswordTooLong
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPassword), nil
+// VerifyPassword checks a plaintext password against a stored hash.
+func VerifyPassword(hashed, password string) bool {
+	return passwords.VerifyPassword(hashed, password)
 }
 
 func GenerateToken(user models.User, cfg *config.Config) (string, error) {

@@ -431,6 +431,7 @@
     },
     "password": {
       "title": "Passwort ändern",
+      "username": "Benutzername",
       "description": "Verwenden Sie ein starkes Passwort, das Sie noch nicht genutzt haben.",
       "current": "Aktuelles Passwort",
       "new": "Neues Passwort",
@@ -843,8 +844,19 @@
     },
     "updateError": "Benutzer konnte nicht aktualisiert werden",
     "deleteError": "Benutzer konnte nicht gelöscht werden",
-    "triggerReminders": "Erinnerungs-E-Mails senden",
-    "triggerRemindersSuccess": "Erinnerungs-E-Mails erfolgreich gesendet",
-    "triggerRemindersError": "Fehler beim Senden der Erinnerungs-E-Mails"
+    "description": "Konten mit Zugriff auf dieses CRM. Alle Benutzer teilen sich dieselben Kunden und Notizen; der Admin kann jedes Passwort zurücksetzen und Rollen verwalten.",
+    "loading": "Benutzer werden geladen...",
+    "self": "Du",
+    "changePassword": "Passwort ändern",
+    "confirmPassword": "Passwort bestätigen",
+    "passwordMismatch": "Passwörter stimmen nicht überein",
+    "passwordChanged": "Passwort aktualisiert",
+    "adminChanged": "Rolle aktualisiert",
+    "deleted": "Benutzer gelöscht",
+    "passwordDescription": "Es gelten keine Längen- oder Komplexitätsanforderungen.",
+    "save": "Speichern",
+    "saving": "Speichern...",
+    "cancel": "Abbrechen",
+    "delete": "Löschen"
   }
 }

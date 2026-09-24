@@ -15,19 +15,30 @@ import (
 	"gorm.io/gorm"
 )
 
-// fillNoteAuthors resolves the username of each note's author (Note.UserID).
+// fillNoteAuthors resolves the username of each note's author (AuthorID) and
+// last editor (EditedByID) so the UI can display both. Notes created before
+// the author columns existed have AuthorID 0 and fall back to UserID (their
+// real author at the time) to avoid showing a blank name.
 func fillNoteAuthors(c *gin.Context, notes []models.Note) {
 	if len(notes) == 0 {
 		return
 	}
 
 	seen := make(map[uint]bool)
-	ids := make([]uint, 0, len(notes))
-	for _, n := range notes {
-		if n.UserID != 0 && !seen[n.UserID] {
-			seen[n.UserID] = true
-			ids = append(ids, n.UserID)
+	ids := make([]uint, 0, len(notes)*2)
+	collect := func(id uint) {
+		if id != 0 && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
 		}
+	}
+	for _, n := range notes {
+		if n.AuthorID != 0 {
+			collect(n.AuthorID)
+		} else {
+			collect(n.UserID)
+		}
+		collect(n.EditedByID)
 	}
 	if len(ids) == 0 {
 		return
@@ -43,7 +54,14 @@ func fillNoteAuthors(c *gin.Context, notes []models.Note) {
 		byID[u.ID] = u.Username
 	}
 	for i := range notes {
-		notes[i].AuthorName = byID[notes[i].UserID]
+		if notes[i].AuthorID != 0 {
+			notes[i].AuthorName = byID[notes[i].AuthorID]
+		} else {
+			notes[i].AuthorName = byID[notes[i].UserID]
+		}
+		if notes[i].EditedByID != 0 {
+			notes[i].EditedByName = byID[notes[i].EditedByID]
+		}
 	}
 }
 
@@ -80,6 +98,7 @@ func CreateNote(c *gin.Context) {
 	// Create note from validated input
 	note := models.Note{
 		UserID:    userID,
+		AuthorID:  sessionUserIDOrZero(c),
 		Title:     noteInput.Title,
 		Content:   noteInput.Content,
 		Date:      noteInput.Date,
@@ -157,6 +176,7 @@ func CreateUnassignedNote(c *gin.Context) {
 	// Create note from validated input
 	note := models.Note{
 		UserID:    userID,
+		AuthorID:  sessionUserIDOrZero(c),
 		Title:     noteInput.Title,
 		Content:   noteInput.Content,
 		Date:      noteInput.Date,
@@ -197,6 +217,7 @@ func GetNote(c *gin.Context) {
 	notes := []models.Note{note}
 	fillNoteAuthors(c, notes)
 	note.AuthorName = notes[0].AuthorName
+	note.EditedByName = notes[0].EditedByName
 
 	c.JSON(http.StatusOK, note)
 }
@@ -228,8 +249,8 @@ func GetUnassignedNotes(c *gin.Context) {
 	}
 
 	if search != "" {
-		like := "%" + search + "%"
-		baseQuery = baseQuery.Where("LOWER(content) LIKE ?", like)
+		like := "%" + foldTerm(search) + "%"
+		baseQuery = baseQuery.Where(accentFoldExpr("content")+" LIKE ?", like)
 	}
 
 	countQuery := baseQuery.Session(&gorm.Session{})
@@ -292,10 +313,10 @@ func GetAllNotes(c *gin.Context) {
 	}
 
 	if search != "" {
-		like := "%" + search + "%"
+		like := "%" + foldTerm(search) + "%"
 		baseQuery = baseQuery.
 			Joins("LEFT JOIN contacts ON contacts.id = notes.contact_id").
-			Where("(LOWER(notes.title) LIKE ? OR LOWER(notes.content) LIKE ? OR LOWER(contacts.firstname) LIKE ? OR LOWER(contacts.lastname) LIKE ?)", like, like, like, like)
+			Where("("+accentFoldExpr("notes.title")+" LIKE ? OR "+accentFoldExpr("notes.content")+" LIKE ? OR "+accentFoldExpr("contacts.firstname")+" LIKE ? OR "+accentFoldExpr("contacts.lastname")+" LIKE ?)", like, like, like, like)
 	}
 
 	countQuery := baseQuery.Session(&gorm.Session{})
@@ -372,12 +393,20 @@ func UpdateNote(c *gin.Context) {
 	note.Date = updatedNote.Date
 	note.ContactID = updatedNote.ContactID
 	note.CompanyID = updatedNote.CompanyID
+	if editorID, ok := sessionUserID(c); ok {
+		note.EditedByID = editorID
+	}
 
 	if err := resolveNoteTarget(c, db, note.ContactID, note.CompanyID); err != nil {
 		return
 	}
 
 	db.Updates(&note)
+
+	notes := []models.Note{note}
+	fillNoteAuthors(c, notes)
+	note.AuthorName = notes[0].AuthorName
+	note.EditedByName = notes[0].EditedByName
 
 	go services.TriggerWebhooks(db, currentConfig(c), userID, "note.updated", note)
 	c.JSON(http.StatusOK, gin.H{"message": "Note updated successfully", "note": note})
@@ -412,8 +441,9 @@ func DeleteNote(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Note deleted"})
 }
 
-// GetNotesForContact retrieves all notes for a given contact.
-// Pass ?deleted=true to list soft-deleted notes (borradas) instead.
+// GetNotesForContact retrieves notes for a given contact, paginated and
+// filterable by ?search, ?fromDate and ?toDate. Pass ?deleted=true to list
+// soft-deleted notes (borradas) instead.
 func GetNotesForContact(c *gin.Context) {
 	// Get contact ID from the request URL
 	contactID := c.Param("id")
@@ -455,9 +485,45 @@ func GetNotesForContact(c *gin.Context) {
 		return
 	}
 
+	pagination := GetPaginationParams(c)
+	search := strings.ToLower(strings.TrimSpace(c.Query("search")))
+	fromDateStr := c.Query("fromDate")
+	toDateStr := c.Query("toDate")
+
+	baseQuery := db.Model(&models.Note{}).
+		Where("notes.user_id = ? AND notes.contact_id = ?", userID, contact.ID)
+
+	// Apply date filters
+	if fromDateStr != "" {
+		if fromDate, err := time.Parse("2006-01-02", fromDateStr); err == nil {
+			baseQuery = baseQuery.Where("notes.date >= ?", fromDate)
+		}
+	}
+	if toDateStr != "" {
+		if toDate, err := time.Parse("2006-01-02", toDateStr); err == nil {
+			// Add one day to include the entire end date
+			toDate = toDate.AddDate(0, 0, 1)
+			baseQuery = baseQuery.Where("notes.date < ?", toDate)
+		}
+	}
+
+	if search != "" {
+		like := "%" + foldTerm(search) + "%"
+		baseQuery = baseQuery.Where("(" + accentFoldExpr("notes.title") + " LIKE ? OR " + accentFoldExpr("notes.content") + " LIKE ?)", like, like)
+	}
+
+	countQuery := baseQuery.Session(&gorm.Session{})
+	var total int64
+	if err := countQuery.Count(&total).Error; err != nil {
+		apperrors.AbortWithError(c, apperrors.ErrDatabase("Failed to count notes").WithError(err))
+		return
+	}
+
 	var notes []models.Note
-	if err := db.Where("user_id = ? AND contact_id = ?", userID, contact.ID).
-		Order("date DESC, id DESC").
+	if err := baseQuery.Session(&gorm.Session{}).
+		Order("notes.date DESC, notes.id DESC").
+		Limit(pagination.Limit).
+		Offset(pagination.Offset).
 		Find(&notes).Error; err != nil {
 		apperrors.AbortWithError(c, apperrors.ErrDatabase("Failed to retrieve notes").WithError(err))
 		return
@@ -467,5 +533,8 @@ func GetNotesForContact(c *gin.Context) {
 	fillNoteAuthors(c, notes)
 	c.JSON(http.StatusOK, gin.H{
 		"notes": notes,
+		"total": total,
+		"page":  pagination.Page,
+		"limit": pagination.Limit,
 	})
 }

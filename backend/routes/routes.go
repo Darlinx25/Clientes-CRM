@@ -57,7 +57,6 @@ func RegisterRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, oidcPro
 
 			// Contact routes
 			protected.GET("/contacts", controllers.GetContacts)
-			protected.GET("/contacts/circles", controllers.GetCircles)
 			protected.GET("/contacts/random", controllers.GetContactsRandom)
 			protected.GET("/contacts/birthdays", controllers.GetUpcomingBirthdays)
 			protected.POST("/contacts", middleware.ValidateJSONMiddleware(&models.ContactInput{}), controllers.CreateContact)
@@ -105,8 +104,9 @@ func RegisterRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, oidcPro
 			protected.PUT("/contacts/:id/companies/:cid", middleware.ValidateJSONMiddleware(&models.CompanyInput{}), controllers.UpdateCompany)
 			protected.DELETE("/contacts/:id/companies/:cid", controllers.DeleteCompany)
 
-			// Company type routes (fixed list, read-only)
+			// Company type routes (fixed list, plus "Otro" for new labels)
 			protected.GET("/company-types", controllers.GetCompanyTypes)
+			protected.POST("/company-types", middleware.ValidateJSONMiddleware(&models.CompanyTypeInput{}), controllers.CreateCompanyType)
 
 			// All companies across contacts (timeline note picker)
 			protected.GET("/companies", controllers.GetAllCompanies)

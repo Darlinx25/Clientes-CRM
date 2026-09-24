@@ -19,7 +19,7 @@ import (
 // (the frontend treats that as the "not connected" state).
 func GetCardDAVConnection(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -40,7 +40,7 @@ func GetCardDAVConnection(c *gin.Context) {
 // SaveCardDAVConnection creates or replaces the user's single CardDAV connection.
 func SaveCardDAVConnection(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -132,7 +132,7 @@ func SaveCardDAVConnection(c *gin.Context) {
 // removes the connection and its link state. Contacts are kept untouched.
 func DeleteCardDAVConnection(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -160,7 +160,7 @@ func DeleteCardDAVConnection(c *gin.Context) {
 // same host they were stored for, so they cannot be walked over to another server by supplying a different base_url.
 func DiscoverCardDAVAddressBooks(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -210,7 +210,7 @@ func DiscoverCardDAVAddressBooks(c *gin.Context) {
 // (sync_running, then last_sync_status and last_sync_stats) instead of awaited.
 func SyncCardDAVConnection(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}

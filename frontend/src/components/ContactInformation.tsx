@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, Stack, Box, Tabs, Tab, Typography } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
-import CelebrationIcon from '@mui/icons-material/Celebration';
+import EventIcon from '@mui/icons-material/Event';
 import BadgeIcon from '@mui/icons-material/Badge';
 import NotesIcon from '@mui/icons-material/Notes';
 import ContactsIcon from '@mui/icons-material/Contacts';
@@ -58,7 +58,6 @@ export default function ContactInformation({
         {rows.map((r, i) => (
           <Typography key={i} variant="body2">
             {r.value}
-            {r.type ? ` (${t(`contacts.types.${r.type}`, r.type)})` : ''}
           </Typography>
         ))}
       </Stack>
@@ -111,7 +110,7 @@ export default function ContactInformation({
 
             {isOn('anniversary') && (
               <EditableField
-                icon={<CelebrationIcon sx={iconSx} />}
+                icon={<EventIcon sx={iconSx} />}
                 label={t('client.startDate')}
                 field="anniversary"
                 value={contact.anniversary || ''}
@@ -135,7 +134,7 @@ export default function ContactInformation({
                 cloneValue={cloneValues}
                 renderDisplay={renderValueList}
                 renderEditor={(draft, setDraft) => (
-                  <MultiValueField label={t('contacts.email')} value={draft} onChange={setDraft} valueType="email" defaultType="home" />
+                  <MultiValueField label={t('contacts.email')} value={draft} onChange={setDraft} valueType="email" defaultType="home" hideType />
                 )}
                 onSave={(draft) => {
                   const clean = draft.filter((e) => e.value.trim());
@@ -152,7 +151,7 @@ export default function ContactInformation({
                 cloneValue={cloneValues}
                 renderDisplay={renderValueList}
                 renderEditor={(draft, setDraft) => (
-                  <MultiValueField label={t('contacts.phone')} value={draft} onChange={setDraft} valueType="tel" defaultType="cell" />
+                  <MultiValueField label={t('contacts.phone')} value={draft} onChange={setDraft} valueType="tel" defaultType="cell" hideType />
                 )}
                 onSave={(draft) => {
                   const clean = draft.filter((p) => p.value.trim());

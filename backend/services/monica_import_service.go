@@ -89,12 +89,6 @@ func MapMonicaContact(mc monica.Contact) MonicaMappedContact {
 	}
 	contact.ContactInformation = truncateRunes(strings.TrimSpace(mc.Description), 1000)
 
-	for _, tag := range mc.Tags {
-		if name := strings.TrimSpace(tag.Name); name != "" {
-			contact.Circles = append(contact.Circles, name)
-		}
-	}
-
 	for _, addr := range mc.Addresses {
 		mapped := models.ContactAddress{
 			Type:   strings.ToLower(strings.TrimSpace(addr.Name)),

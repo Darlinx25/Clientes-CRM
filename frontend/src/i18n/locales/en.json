@@ -80,8 +80,9 @@
   "register": {
     "title": "Register",
     "username": "Username",
-    "email": "Email",
     "password": "Password",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match",
     "registerButton": "Register",
     "registering": "Registering...",
     "registrationFailed": "Registration failed",
@@ -431,6 +432,7 @@
     },
     "password": {
       "title": "Change Password",
+      "username": "Username",
       "description": "Use a strong password that you haven't used elsewhere.",
       "current": "Current password",
       "new": "New password",
@@ -843,8 +845,19 @@
     },
     "updateError": "Failed to update user",
     "deleteError": "Failed to delete user",
-    "triggerReminders": "Send Reminder Emails",
-    "triggerRemindersSuccess": "Reminder emails sent successfully",
-    "triggerRemindersError": "Failed to send reminder emails"
+    "description": "Accounts that can access this CRM. All users share the same clients and notes; the admin can reset any password and manage roles.",
+    "loading": "Loading users...",
+    "self": "You",
+    "changePassword": "Change password",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordChanged": "Password updated",
+    "adminChanged": "Role updated",
+    "deleted": "User deleted",
+    "passwordDescription": "No length or strength requirements apply.",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "delete": "Delete"
   }
 }

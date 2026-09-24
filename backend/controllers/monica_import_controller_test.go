@@ -245,7 +245,6 @@ func TestMonicaImportEndToEnd(t *testing.T) {
 	assert.Equal(t, "female", ada.Gender)
 	assert.Equal(t, "1990-12-10", ada.Birthday)
 	assert.Equal(t, "ada@example.com", ada.Email)
-	assert.Equal(t, []string{"friends"}, ada.Circles)
 	assert.Equal(t, "Analyst", ada.JobTitle)
 	assert.Equal(t, "Engines Ltd", ada.Organization)
 	assert.Equal(t, "yes", ada.CustomFields["Starred"])

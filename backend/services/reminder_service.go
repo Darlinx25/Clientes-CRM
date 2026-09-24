@@ -354,7 +354,7 @@ func formatBirthdayForUser(birthday string, dateFormat string) string {
 
 // Send email using Resend with daily reminders and upcoming birthdays
 func sendReminderEmail(user models.User, reminders []models.Reminder, config config.Config, db *gorm.DB) error {
-	if user.Email == "" {
+	if !HasUsableEmail(user.Email) {
 		logger.Warn().Uint("user_id", user.ID).Msg("Skipping reminder email because user email is missing")
 		return nil
 	}

@@ -39,6 +39,10 @@ frontend/dist/
 frontend/node_modules/
 node_modules/
 
+# Embedded frontend copy + standalone builds
+backend/web/dist/
+dist/
+
 # IDE specific
 .vscode/
 .idea/

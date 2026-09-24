@@ -431,6 +431,7 @@
     },
     "password": {
       "title": "Cambia Password",
+      "username": "Nome utente",
       "description": "Usa una password forte che non hai usato altrove.",
       "current": "Password attuale",
       "new": "Nuova password",
@@ -843,8 +844,19 @@
     },
     "updateError": "Impossibile aggiornare l'utente",
     "deleteError": "Impossibile eliminare l'utente",
-    "triggerReminders": "Invia Email Promemoria",
-    "triggerRemindersSuccess": "Email di promemoria inviate con successo",
-    "triggerRemindersError": "Invio email di promemoria fallito"
+    "description": "Account con accesso a questo CRM. Tutti gli utenti condividono gli stessi clienti e note; l'amministratore può reimpostare qualsiasi password e gestire i ruoli.",
+    "loading": "Caricamento utenti...",
+    "self": "Tu",
+    "changePassword": "Cambia password",
+    "confirmPassword": "Conferma password",
+    "passwordMismatch": "Le password non coincidono",
+    "passwordChanged": "Password aggiornata",
+    "adminChanged": "Ruolo aggiornato",
+    "deleted": "Utente eliminato",
+    "passwordDescription": "Nessun requisito di lunghezza o complessità.",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "cancel": "Annulla",
+    "delete": "Elimina"
   }
 }

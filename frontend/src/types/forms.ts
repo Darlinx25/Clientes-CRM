@@ -93,7 +93,6 @@ export interface SearchFormData {
   query: string;
   searchIn: 'contacts' | 'notes' | 'activities' | 'all';
   filters?: {
-    circles?: string[];
     dateFrom?: string;
     dateTo?: string;
   };
@@ -104,7 +103,6 @@ export interface SearchFormData {
  */
 export interface ContactFilterFormData {
   search: string;
-  circle?: string;
   gender?: string;
   hasBirthday?: boolean;
   hasEmail?: boolean;

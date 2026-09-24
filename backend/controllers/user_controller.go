@@ -16,7 +16,6 @@ import (
 	"meerkat/services"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -60,9 +59,16 @@ func RegisterUser(cfg *config.Config) gin.HandlerFunc {
 			language = "es"
 		}
 
+		// Email is optional: users who skip it get a unique placeholder so the
+		// NOT NULL/UNIQUE email column stays satisfied without a table rebuild.
+		email := strings.TrimSpace(strings.ToLower(input.Email))
+		if email == "" {
+			email = services.PlaceholderEmail(input.Username)
+		}
+
 		user := models.User{
 			Username: strings.ToLower(input.Username),
-			Email:    strings.ToLower(input.Email),
+			Email:    email,
 			Password: hashedPassword,
 			Language: language,
 			IsAdmin:  userCount == 0,
@@ -148,7 +154,7 @@ func LoginUser(context *gin.Context, cfg *config.Config) {
 	}
 
 	// Compare the hashed password
-	if err := bcrypt.CompareHashAndPassword([]byte(foundUser.Password), []byte(input.Password)); err != nil {
+	if !services.VerifyPassword(foundUser.Password, input.Password) {
 		// Record failed attempt for password mismatch
 		isLocked, lockoutSecs := accountLimiter.RecordFailedAttempt(identifier)
 		if isLocked {
@@ -488,7 +494,7 @@ func UpdateDateFormat(context *gin.Context) {
 func UpdateCustomFieldNames(c *gin.Context) {
 	log := logger.FromContext(c)
 
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -526,7 +532,7 @@ func UpdateCustomFieldNames(c *gin.Context) {
 func GetCustomFieldNames(c *gin.Context) {
 	log := logger.FromContext(c)
 
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -555,7 +561,7 @@ func GetCustomFieldNames(c *gin.Context) {
 func UpdateEnabledContactFields(c *gin.Context) {
 	log := logger.FromContext(c)
 
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -594,7 +600,7 @@ func UpdateEnabledContactFields(c *gin.Context) {
 func GetEnabledContactFields(c *gin.Context) {
 	log := logger.FromContext(c)
 
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -661,12 +667,12 @@ func ChangePassword(context *gin.Context) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.CurrentPassword)); err != nil {
+	if !services.VerifyPassword(user.Password, input.CurrentPassword) {
 		apperrors.AbortWithError(context, apperrors.ErrInvalidInput("current_password", "Current password is incorrect"))
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.NewPassword)); err == nil {
+	if services.VerifyPassword(user.Password, input.NewPassword) {
 		apperrors.AbortWithError(context, apperrors.ErrInvalidInput("new_password", "New password must differ from current password"))
 		return
 	}

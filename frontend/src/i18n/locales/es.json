@@ -72,8 +72,9 @@
   "register": {
     "title": "Registrarse",
     "username": "Nombre de usuario",
-    "email": "Email",
     "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
     "registerButton": "Registrarse",
     "registering": "Registrando...",
     "registrationFailed": "Error en el registro",
@@ -232,6 +233,10 @@
     "numberLabel": "Nº Empresa",
     "numberRequired": "Ingrese el número de empresa",
     "types": "Tipos de Empresa",
+    "otherType": "Otro",
+    "otherTypeLabel": "Escriba el tipo de empresa",
+    "otherTypeRequired": "Ingrese el tipo de empresa o desmarque \"Otro\"",
+    "otherTypeError": "No se pudo guardar el tipo de empresa",
     "deleteTitle": "Eliminar empresa",
     "deleteConfirm": "¿Eliminar esta empresa?",
     "delete": "Eliminar",
@@ -299,6 +304,7 @@
   },
   "noteEdited": {
     "edited": "Editada",
+    "editedBy": "Editada {{date}} por {{name}}",
     "viewOriginal": "Ver original",
     "hideOriginal": "Ocultar original"
   },
@@ -457,6 +463,7 @@
     },
     "password": {
       "title": "Cambiar Contraseña",
+      "username": "Usuario",
       "description": "Usa una contraseña segura que no hayas usado en otro lugar.",
       "current": "Contraseña actual",
       "new": "Nueva contraseña",
@@ -869,8 +876,19 @@
     },
     "updateError": "Error al actualizar el usuario",
     "deleteError": "Error al eliminar el usuario",
-    "triggerReminders": "Enviar Emails de Recordatorio",
-    "triggerRemindersSuccess": "Emails de recordatorio enviados exitosamente",
-    "triggerRemindersError": "Error al enviar los emails de recordatorio"
+    "description": "Cuentas con acceso a este CRM. Todos los usuarios comparten los mismos clientes y notas; el administrador puede restablecer cualquier contraseña y gestionar los roles.",
+    "loading": "Cargando usuarios...",
+    "self": "Tú",
+    "changePassword": "Cambiar contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "passwordChanged": "Contraseña actualizada",
+    "adminChanged": "Rol actualizado",
+    "deleted": "Usuario eliminado",
+    "passwordDescription": "No se aplican requisitos de longitud ni complejidad.",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "cancel": "Cancelar",
+    "delete": "Eliminar"
   }
 }

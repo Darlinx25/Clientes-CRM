@@ -9,7 +9,7 @@ import (
 type User struct {
 	gorm.Model
 	Username                 string     `gorm:"unique" validate:"required,min=1,max=50,no_at_sign"`
-	Password                 string     `validate:"required,min=8,strong_password"`
+	Password                 string     `validate:"required"`
 	Email                    string     `gorm:"unique" validate:"required,email"`
 	Language                 string     `gorm:"default:'es'" json:"language" validate:"omitempty,oneof=en de it es fr"`
 	DateFormat               string     `gorm:"default:'eu'" json:"date_format" validate:"omitempty,oneof=eu us iso"`

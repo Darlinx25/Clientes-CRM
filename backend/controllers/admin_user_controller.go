@@ -33,7 +33,7 @@ func TriggerReminders(c *gin.Context, cfg config.Config) {
 
 // GetCurrentUser returns the current authenticated user's information
 func GetCurrentUser(c *gin.Context) {
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -154,7 +154,7 @@ func UpdateUser(c *gin.Context) {
 	log := logger.FromContext(c)
 	db := c.MustGet("db").(*gorm.DB)
 
-	currentUserID, ok := currentUserID(c)
+	currentUserID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -254,7 +254,7 @@ func DeleteUser(c *gin.Context) {
 	log := logger.FromContext(c)
 	db := c.MustGet("db").(*gorm.DB)
 
-	currentUserID, ok := currentUserID(c)
+	currentUserID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -280,6 +280,12 @@ func DeleteUser(c *gin.Context) {
 		}
 		log.Error().Err(err).Uint64("user_id", id).Msg("Failed to get user for deletion")
 		apperrors.AbortWithError(c, apperrors.ErrDatabase("get user").WithError(err))
+		return
+	}
+
+	// The shared "admin" account owns all CRM content; deleting it would wipe the dataset.
+	if user.Username == services.AdminUsername {
+		apperrors.AbortWithError(c, apperrors.ErrForbidden("Cannot delete the shared admin account"))
 		return
 	}
 

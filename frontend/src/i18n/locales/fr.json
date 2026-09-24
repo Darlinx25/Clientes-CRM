@@ -431,6 +431,7 @@
     },
     "password": {
       "title": "Changer le mot de passe",
+      "username": "Nom d'utilisateur",
       "description": "Utilisez un mot de passe fort que vous n'avez utilisé nulle part ailleurs.",
       "current": "Mot de passe actuel",
       "new": "Nouveau mot de passe",
@@ -843,8 +844,19 @@
     },
     "updateError": "Échec de la mise à jour de l'utilisateur",
     "deleteError": "Échec de la suppression de l'utilisateur",
-    "triggerReminders": "Envoyer les e-mails de rappel",
-    "triggerRemindersSuccess": "E-mails de rappel envoyés avec succès",
-    "triggerRemindersError": "Échec de l'envoi des e-mails de rappel"
+    "description": "Comptes ayant accès à ce CRM. Tous les utilisateurs partagent les mêmes clients et notes ; l'administrateur peut réinitialiser n'importe quel mot de passe et gérer les rôles.",
+    "loading": "Chargement des utilisateurs...",
+    "self": "Toi",
+    "changePassword": "Changer le mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordChanged": "Mot de passe mis à jour",
+    "adminChanged": "Rôle mis à jour",
+    "deleted": "Utilisateur supprimé",
+    "passwordDescription": "Aucune exigence de longueur ou de complexité.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "cancel": "Annuler",
+    "delete": "Supprimer"
   }
 }

@@ -15,21 +15,39 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// InitDB initializes the database connection and runs migrations
+// pragmaDSN appends SQLite pragmas suited to a small machine shared by several
+// concurrent users: WAL journal mode (concurrent readers + a writer), a busy
+// timeout so concurrent writes wait instead of failing with "database is
+// locked", and foreign-key integrity checks (safe because the app only does
+// soft deletes). synchronous=NORMAL keeps writes fast while remaining durable
+// enough under WAL.
+func pragmaDSN(dbPath string) string {
+	return dbPath + "?_pragma=journal_mode(WAL)" +
+		"&_pragma=busy_timeout(10000)" +
+		"&_pragma=foreign_keys(ON)" +
+		"&_pragma=synchronous(NORMAL)"
+}
+
+// InitDB initializes the database connection and runs migrations.
+// A single pooled connection is used on purpose: SQLite serialises writers
+// through one connection, which removes "database is locked" failures when
+// several users read and write at the same time.
 func InitDB(dbPath string) (*gorm.DB, error) {
 	// Open database connection for migrations
-	sqlDB, err := sql.Open("sqlite", dbPath)
+	sqlDB, err := sql.Open("sqlite", pragmaDSN(dbPath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
+	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxIdleConns(1)
 
 	// Run migrations
 	if err := RunMigrations(sqlDB); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// Open GORM connection
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	// Open GORM connection on the same pool so the pragmas apply to every query
+	db, err := gorm.Open(sqlite.Dialector{Conn: sqlDB}, &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect with GORM: %w", err)
 	}

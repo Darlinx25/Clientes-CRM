@@ -17,7 +17,7 @@ import (
 
 func ListWebhooks(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -35,7 +35,7 @@ const maxWebhooksPerUser = 20
 
 func CreateWebhook(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -88,7 +88,7 @@ func CreateWebhook(c *gin.Context) {
 
 func GetWebhook(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -103,7 +103,7 @@ func GetWebhook(c *gin.Context) {
 
 func UpdateWebhook(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -134,7 +134,7 @@ func UpdateWebhook(c *gin.Context) {
 
 func DeleteWebhook(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -154,7 +154,7 @@ func DeleteWebhook(c *gin.Context) {
 
 func TestWebhook(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}
@@ -170,7 +170,7 @@ func TestWebhook(c *gin.Context) {
 
 func GetWebhookDeliveries(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	userID, ok := currentUserID(c)
+	userID, ok := sessionUserID(c)
 	if !ok {
 		return
 	}

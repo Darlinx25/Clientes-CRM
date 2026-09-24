@@ -49,7 +49,6 @@ func CreateContact(c *gin.Context) {
 		FoodPreference:     contactInput.FoodPreference,
 		WorkInformation:    contactInput.WorkInformation,
 		ContactInformation: contactInput.ContactInformation,
-		Circles:            contactInput.Circles,
 		CustomFields:       contactInput.CustomFields,
 		Emails:             contactInput.Emails,
 		Phones:             contactInput.Phones,
@@ -80,15 +79,15 @@ func CreateContact(c *gin.Context) {
 
 // filters a contacts query by a free-text term
 func applyContactSearch(query *gorm.DB, searchTerm string) *gorm.DB {
-	like := "%" + searchTerm + "%"
+	like := "%" + foldTerm(searchTerm) + "%"
 	return query.Where(
-		"firstname LIKE ? OR lastname LIKE ? OR nickname LIKE ? "+
-			"OR (firstname || ' ' || lastname) LIKE ? OR (nickname || ' ' || lastname) LIKE ? "+
-			"OR email LIKE ? OR phone LIKE ? "+
-			"OR rut LIKE ? OR contact_person LIKE ? "+
-			"OR (json_valid(emails) AND EXISTS (SELECT 1 FROM json_each(contacts.emails) WHERE json_extract(json_each.value, '$.value') LIKE ?)) "+
-			"OR (json_valid(phones) AND EXISTS (SELECT 1 FROM json_each(contacts.phones) WHERE json_extract(json_each.value, '$.value') LIKE ?)) "+
-			"OR EXISTS (SELECT 1 FROM companies WHERE companies.contact_id = contacts.id AND companies.company_number LIKE ?)",
+		accentFoldExpr("firstname")+" LIKE ? OR "+accentFoldExpr("lastname")+" LIKE ? OR "+accentFoldExpr("nickname")+" LIKE ? "+
+			"OR "+accentFoldExpr("(firstname || ' ' || lastname)")+" LIKE ? OR "+accentFoldExpr("(nickname || ' ' || lastname)")+" LIKE ? "+
+			"OR "+accentFoldExpr("email")+" LIKE ? OR "+accentFoldExpr("phone")+" LIKE ? "+
+			"OR "+accentFoldExpr("rut")+" LIKE ? OR "+accentFoldExpr("contact_person")+" LIKE ? "+
+			"OR (json_valid(emails) AND EXISTS (SELECT 1 FROM json_each(contacts.emails) WHERE "+accentFoldExpr("json_extract(json_each.value, '$.value')")+" LIKE ?)) "+
+			"OR (json_valid(phones) AND EXISTS (SELECT 1 FROM json_each(contacts.phones) WHERE "+accentFoldExpr("json_extract(json_each.value, '$.value')")+" LIKE ?)) "+
+			"OR EXISTS (SELECT 1 FROM companies WHERE companies.contact_id = contacts.id AND "+accentFoldExpr("companies.company_number")+" LIKE ?)",
 		like, like, like, like, like, like, like, like, like, like, like, like,
 	)
 }
@@ -96,10 +95,15 @@ func applyContactSearch(query *gorm.DB, searchTerm string) *gorm.DB {
 func GetContacts(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
 
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+
 	pagination := GetPaginationParams(c)
 
 	// Define allowed fields and parse requested fields with validation
-	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "circles", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "contact_person"}
+	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "contact_person"}
 	var selectedFields []string
 	fields := c.Query("fields")
 	if fields != "" {
@@ -144,7 +148,7 @@ func GetContacts(c *gin.Context) {
 	archivedOnly := c.Query("archived") == "true"
 
 	var contacts []models.Contact
-	query := db.Model(&models.Contact{}).Limit(pagination.Limit).Offset(pagination.Offset)
+	query := db.Model(&models.Contact{}).Where("user_id = ?", userID).Limit(pagination.Limit).Offset(pagination.Offset)
 
 	// Apply archive filtering
 	if !includeArchived {
@@ -175,10 +179,6 @@ func GetContacts(c *gin.Context) {
 		query = applyContactSearch(query, searchTerm)
 	}
 
-	if circle := c.Query("circle"); circle != "" {
-		query = query.Where("EXISTS (SELECT 1 FROM json_each(contacts.circles) WHERE json_each.value = ?)", circle)
-	}
-
 	// Preload requested relationships
 	for rel, include := range relationshipMap {
 		if include {
@@ -204,7 +204,7 @@ func GetContacts(c *gin.Context) {
 	}
 
 	var total int64
-	countQuery := db.Model(&models.Contact{})
+	countQuery := db.Model(&models.Contact{}).Where("user_id = ?", userID)
 
 	// Apply the same archive filter to the count query
 	if !includeArchived {
@@ -218,10 +218,6 @@ func GetContacts(c *gin.Context) {
 	// Apply the same search filters to the count query
 	if searchTerm := c.Query("search"); searchTerm != "" {
 		countQuery = applyContactSearch(countQuery, searchTerm)
-	}
-
-	if circle := c.Query("circle"); circle != "" {
-		countQuery = countQuery.Where("EXISTS (SELECT 1 FROM json_each(contacts.circles) WHERE json_each.value = ?)", circle)
 	}
 
 	countQuery.Count(&total)
@@ -247,10 +243,15 @@ func GetContacts(c *gin.Context) {
 func GetContactsRandom(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
 
-	var selectedFields = []string{"ID", "firstname", "lastname", "nickname", "circles", "photo_thumbnail"}
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+
+	var selectedFields = []string{"ID", "firstname", "lastname", "nickname", "photo_thumbnail"}
 
 	var contacts []models.Contact
-	query := db.Model(&models.Contact{}).Where("archived = ?", false)
+	query := db.Model(&models.Contact{}).Where("user_id = ?", userID).Where("archived = ?", false)
 
 	if len(selectedFields) > 0 {
 		query = query.Select(selectedFields)
@@ -304,10 +305,15 @@ func GetContact(c *gin.Context) {
 
 	db := c.MustGet("db").(*gorm.DB)
 
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+
 	// Check for fields query parameter to enable partial fetching
 	// Note: "companies" is a relation (not a column). It is validated below but
 	// fetched via Preload instead of Select, so its rows are returned too.
-	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "circles", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "contact_person", "companies"}
+	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "contact_person", "companies"}
 	var selectedFields []string
 	fields := c.Query("fields")
 	if fields != "" {
@@ -319,7 +325,7 @@ func GetContact(c *gin.Context) {
 	}
 
 	var contact models.Contact
-	query := db.Where("id = ?", id)
+	query := db.Where("id = ? AND user_id = ?", id, userID)
 
 	if len(selectedFields) > 0 {
 		// Partial fetch: only select requested columns; relations (companies)
@@ -370,7 +376,7 @@ func UpdateContact(c *gin.Context) {
 	}
 
 	var contact models.Contact
-	if err := db.First(&contact, id).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).First(&contact, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			apperrors.AbortWithError(c, apperrors.ErrNotFound("Contact").WithDetails("id", id))
 		} else {
@@ -399,7 +405,6 @@ func UpdateContact(c *gin.Context) {
 	contact.FoodPreference = contactInput.FoodPreference
 	contact.WorkInformation = contactInput.WorkInformation
 	contact.ContactInformation = contactInput.ContactInformation
-	contact.Circles = contactInput.Circles
 	contact.CustomFields = contactInput.CustomFields
 	contact.Emails = contactInput.Emails
 	contact.Phones = contactInput.Phones
@@ -465,7 +470,7 @@ func DeleteContact(c *gin.Context) {
 
 	// Check if contact exists first
 	var contact models.Contact
-	if err := db.First(&contact, id).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).First(&contact, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			apperrors.AbortWithError(c, apperrors.ErrNotFound("Contact").WithDetails("id", id))
 		} else {
@@ -553,31 +558,18 @@ func deleteContactPhotos(c *gin.Context, contact models.Contact) {
 	}
 }
 
-// GetCircles returns all unique circles associated with contacts.
-func GetCircles(c *gin.Context) {
-	db := c.MustGet("db").(*gorm.DB)
-
-	var circleNames []string
-
-	// Raw SQL query to extract unique circle names
-	err := db.Raw(`SELECT DISTINCT json_each.value AS circle
-	               FROM contacts, json_each(contacts.circles)`).Scan(&circleNames).Error
-	if err != nil {
-		apperrors.AbortWithError(c, apperrors.ErrDatabase("Failed to retrieve circles").WithError(err))
-		return
-	}
-
-	// Return the list of unique circle names
-	c.JSON(http.StatusOK, circleNames)
-}
-
 // ArchiveContact archives a contact and deletes all its reminders
 func ArchiveContact(c *gin.Context) {
 	id := c.Param("id")
 	db := c.MustGet("db").(*gorm.DB)
 
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+
 	var contact models.Contact
-	if err := db.First(&contact, id).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).First(&contact, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			apperrors.AbortWithError(c, apperrors.ErrNotFound("Contact").WithDetails("id", id))
 		} else {
@@ -615,8 +607,13 @@ func UnarchiveContact(c *gin.Context) {
 	id := c.Param("id")
 	db := c.MustGet("db").(*gorm.DB)
 
+	userID, ok := currentUserID(c)
+	if !ok {
+		return
+	}
+
 	var contact models.Contact
-	if err := db.First(&contact, id).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).First(&contact, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			apperrors.AbortWithError(c, apperrors.ErrNotFound("Contact").WithDetails("id", id))
 		} else {

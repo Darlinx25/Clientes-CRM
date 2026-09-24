@@ -13,6 +13,7 @@ export interface Note {
   original_content?: string;
   deleted_at?: string | null;
   author_name?: string;
+  edited_by_name?: string;
   contact?: {
     ID: number;
     firstname: string;
@@ -49,12 +50,31 @@ export interface GetNotesParams {
   toDate?: string;
 }
 
-// Get notes for a contact
+// Get notes for a contact (paginated; matches GetNotesParams filters)
 export async function getContactNotes(
-  contactId: string | number
+  contactId: string | number,
+  params: GetNotesParams = {}
 ): Promise<NotesResponse> {
+  const { page = 1, limit = 25 } = params;
+  const search = params.search?.trim();
+
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+
+  if (search) {
+    queryParams.append('search', search);
+  }
+  if (params.fromDate) {
+    queryParams.append('fromDate', params.fromDate);
+  }
+  if (params.toDate) {
+    queryParams.append('toDate', params.toDate);
+  }
+
   const response = await apiFetch(
-    `${API_BASE_URL}/contacts/${contactId}/notes`,
+    `${API_BASE_URL}/contacts/${contactId}/notes?${queryParams.toString()}`,
     { headers: getAuthHeaders() }
   );
 
