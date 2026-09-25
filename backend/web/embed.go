@@ -48,5 +48,6 @@ func serveIndex(w http.ResponseWriter, r *http.Request, sub fs.FS) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
 }

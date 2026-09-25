@@ -12,10 +12,11 @@ Basado en [Meerkat CRM](https://github.com/fbuchner/meerkat-crm) simplificado.
 ## Uso en Windows (la app es un solo `.exe`)
 
 ### Qué descargás y adónde va
-- El paquete listo para llevar es `dist/historial-windows.zip` (se genera con
-  `scripts/build-windows-exe.sh`).
-- Lo copiás a la PC de Windows, clic derecho → **"Extraer todo"** y queda en una
-  carpeta, por ejemplo `C:\Historial\`. Ahí quedan `historial.exe` y los `.cmd`
+- El paquete listo para llevar es `dist/historial-windows-v0.1.0.zip` (se genera
+  con `scripts/build-windows-exe.sh`). Viene la versión y el hash del `.exe`
+  adentro, para revisar el archivo.
+- Lo copiás a la PC de Windows, clic derecho → **"Extraer todo"** y adentro hay
+  una carpeta `Historial\` con `historial.exe` y los `.cmd`
   (`instalar-autoarranque`, `abrir-firewall`, `hacer-backup`, `iniciar`,
   `desinstalar-autoarranque`).
 - **Importante:** la carpeta va en disco local. NO la pongas en OneDrive/
@@ -29,6 +30,26 @@ Basado en [Meerkat CRM](https://github.com/fbuchner/meerkat-crm) simplificado.
 3. En esa misma PC abrí el navegador y entrá a `http://localhost:7300`.
 4. Login inicial: **admin / admin**. Cambiá esa contraseña cuanto antes
    (Configuración → Cambiar Contraseña).
+
+### Si Windows lo bloquea (SmartScreen / antivirus)
+Lo primero que vas a ver es la advertencia de **SmartScreen** ("Windows
+protegió su equipo"). Es normal: la app **no está firmada digitalmente** (eso
+requiere un certificado pago, caro), así que Windows no puede decir "de confianza".
+Esto le pasa a TODA aplicación casera, no es un problema específico de esta.
+
+- La advertencia de "editor desconocido" **no desaparece** sin el certificado
+  de firma (cuesta dinero por año). Con "Más información → Ejecutar de todas
+  formas" se salta UNA vez por PC; a la segunda ya no pregunta.
+- Si el aviso aparece al **extraer el zip**: el navegador marca el zip como
+  "descargado de internet". Clic derecho sobre el zip → **"Desbloquear"**
+  (si la opción existe) **antes** de extraerlo, y quedará sin advertencia.
+- El archivo trae su **hash** (`historial.exe.sha256`): podés verificarlo con
+  `certutil -hashfile historial.exe SHA256` y comparar, para confirmar que lo
+  que instalás es exactamente lo que se generó acá.
+- Si algún antivirus (Defender u otro) lo pusiera en cuarentena: es un falso
+  positivo de un ejecutable nuevo sin firma. Podés reportarlo a Microsoft en
+  https://www.microsoft.com/wdsi/filesubmission para que lo revisen y dejen de
+  marcarlo.
 
 ### Que arranque sola al encender la PC (servidor sin nadie que la toque)
 - Clic derecho sobre `instalar-autoarranque.cmd` → **"Ejecutar como

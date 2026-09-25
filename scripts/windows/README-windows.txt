@@ -9,7 +9,13 @@
        C:\Historial\
      (NO la deje en OneDrive/Dropbox/unidad de red: la base no debe
      vivir en carpetas sincronizadas).
+   - Si al extraer el zip Windows avisa del archivo descargado: clic
+     derecho sobre el zip -> "Desbloquear" ANTES de extraer.
    - Doble clic sobre historial.exe.
+   - Si SmartScreen muestra "Windows protegio su equipo":
+       "Mas informacion" -> "Ejecutar de todas formas"
+     Es normal: la app no esta firmada digitalmente. A la segunda vez ya
+     no pregunta. (Ver punto 8.)
    - En el navegador abra:  http://localhost:7300
    - Entrar con el usuario admin (primera vez: admin / admin).
      IMPORTANTE: cambie esa contrasena cuanto antes
@@ -64,4 +70,20 @@
        PORT=7300, REMINDER_TIMEZONE=America/Montevideo,
        BACKUP_DIR=C:\Historial\backups
    - La app es liviana (un proceso) y aguanta varios usuarios a la vez.
+
+8) SI WINDOWS LO BLOQUEA (SmartScreen / antivirus)
+   - El aviso de SmartScreen ("editor desconocido") NO se puede quitar del
+     todo sin un certificado de firma pago (cuesta dinero). Pero es UNA
+     sola vez por PC: "Mas informacion" -> "Ejecutar de todas formas".
+   - Si la advertencia aparece al EXTRAER el zip: el navegador marco el
+     archivo como "descargado de internet". Clic derecho sobre el zip ->
+     "Desbloquear" ANTES de extraer, y queda sin advertencia.
+   - El exe trae su hash en historial.exe.sha256 dentro de esta carpeta.
+     Para verificarlo:
+         certutil -hashfile historial.exe SHA256
+     El resultado debe coincidir con el contenido de historial.exe.sha256.
+   - Si algun antivirus lo pusiera en cuarentena: es un falso positivo de
+     un ejecutable nuevo sin firma. Reportelo en
+     https://www.microsoft.com/wdsi/filesubmission para que dejen de
+     marcarlo.
 =====================================================================
