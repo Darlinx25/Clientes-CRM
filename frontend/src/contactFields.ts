@@ -14,6 +14,7 @@ export type ContactFieldKey =
   | 'middle_name'
   | 'suffix'
   | 'rut'
+  | 'documento'
   | 'contact_person'
   | 'organization'
   | 'department'
@@ -43,6 +44,7 @@ export const CONTACT_FIELDS: ContactFieldDef[] = [
   { key: 'nickname', labelKey: 'contacts.nickname', group: 'name' },
 
   { key: 'rut', labelKey: 'client.rut', group: 'name' },
+  { key: 'documento', labelKey: 'client.documento', group: 'name' },
   { key: 'contact_person', labelKey: 'client.contactPerson', group: 'name' },
 
   { key: 'anniversary', labelKey: 'client.startDate', group: 'name' },
@@ -66,6 +68,7 @@ export const CONTACT_FIELD_GROUPS: ContactFieldDef['group'][] = [
 // are opt-in via Settings.
 export const DEFAULT_ENABLED_CONTACT_FIELDS: ContactFieldKey[] = [
   'rut',
+  'documento',
   'contact_person',
   'emails',
   'phones',

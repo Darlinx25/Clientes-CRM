@@ -69,6 +69,7 @@ type Contact struct {
 
 	// Client-specific fields
 	Rut           string `gorm:"type:text COLLATE NOCASE" json:"rut" validate:"max=30"`
+	Documento     string `gorm:"type:text COLLATE NOCASE" json:"documento" validate:"max=30"`
 	ContactPerson string `gorm:"type:text COLLATE NOCASE" json:"contact_person" validate:"max=200"`
 
 	// Multi-valued vCard fields (stored as JSON arrays). The legacy Email/Phone/Address

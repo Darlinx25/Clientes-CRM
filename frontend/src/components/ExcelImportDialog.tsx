@@ -26,15 +26,20 @@ import { useSnackbar } from '../context/SnackbarContext';
 
 const REQUIRED_COLUMNS = [
   'Cliente',
+];
+
+const OPTIONAL_COLUMNS = [
   'Tipo de Empresa',
   'Persona de Contacto',
   'Email',
   'Celular',
   'RUT',
   'Número de Empresa',
+  'Documento',
+  'Fecha de Inicio',
+  'Comentario',
+  'Aportación',
 ];
-
-const OPTIONAL_COLUMNS = ['Aniversario', 'Comentario', 'Aportación'];
 
 interface ExcelImportDialogProps {
   open: boolean;

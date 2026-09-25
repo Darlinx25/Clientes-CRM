@@ -64,6 +64,7 @@ func CreateContact(c *gin.Context) {
 		Role:               contactInput.Role,
 		Anniversary:        contactInput.Anniversary,
 		Rut:                contactInput.Rut,
+		Documento:          contactInput.Documento,
 		ContactPerson:      contactInput.ContactPerson,
 		Companies:          contactInput.Companies,
 	}
@@ -84,11 +85,11 @@ func applyContactSearch(query *gorm.DB, searchTerm string) *gorm.DB {
 		accentFoldExpr("firstname")+" LIKE ? OR "+accentFoldExpr("lastname")+" LIKE ? OR "+accentFoldExpr("nickname")+" LIKE ? "+
 			"OR "+accentFoldExpr("(firstname || ' ' || lastname)")+" LIKE ? OR "+accentFoldExpr("(nickname || ' ' || lastname)")+" LIKE ? "+
 			"OR "+accentFoldExpr("email")+" LIKE ? OR "+accentFoldExpr("phone")+" LIKE ? "+
-			"OR "+accentFoldExpr("rut")+" LIKE ? OR "+accentFoldExpr("contact_person")+" LIKE ? "+
+			"OR "+accentFoldExpr("rut")+" LIKE ? OR "+accentFoldExpr("documento")+" LIKE ? OR "+accentFoldExpr("contact_person")+" LIKE ? "+
 			"OR (json_valid(emails) AND EXISTS (SELECT 1 FROM json_each(contacts.emails) WHERE "+accentFoldExpr("json_extract(json_each.value, '$.value')")+" LIKE ?)) "+
 			"OR (json_valid(phones) AND EXISTS (SELECT 1 FROM json_each(contacts.phones) WHERE "+accentFoldExpr("json_extract(json_each.value, '$.value')")+" LIKE ?)) "+
 			"OR EXISTS (SELECT 1 FROM companies WHERE companies.contact_id = contacts.id AND "+accentFoldExpr("companies.company_number")+" LIKE ?)",
-		like, like, like, like, like, like, like, like, like, like, like, like,
+		like, like, like, like, like, like, like, like, like, like, like, like, like,
 	)
 }
 
@@ -103,7 +104,7 @@ func GetContacts(c *gin.Context) {
 	pagination := GetPaginationParams(c)
 
 	// Define allowed fields and parse requested fields with validation
-	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "contact_person"}
+	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "documento", "contact_person"}
 	var selectedFields []string
 	fields := c.Query("fields")
 	if fields != "" {
@@ -313,7 +314,7 @@ func GetContact(c *gin.Context) {
 	// Check for fields query parameter to enable partial fetching
 	// Note: "companies" is a relation (not a column). It is validated below but
 	// fetched via Preload instead of Select, so its rows are returned too.
-	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "contact_person", "companies"}
+	allowedFields := []string{"ID", "firstname", "lastname", "nickname", "gender", "email", "phone", "birthday", "address", "how_we_met", "food_preference", "work_information", "contact_information", "photo", "photo_thumbnail", "custom_fields", "archived", "emails", "phones", "addresses", "urls", "impps", "prefix", "middle_name", "suffix", "organization", "department", "job_title", "role", "anniversary", "rut", "documento", "contact_person", "companies"}
 	var selectedFields []string
 	fields := c.Query("fields")
 	if fields != "" {
@@ -420,6 +421,7 @@ func UpdateContact(c *gin.Context) {
 	contact.Role = contactInput.Role
 	contact.Anniversary = contactInput.Anniversary
 	contact.Rut = contactInput.Rut
+	contact.Documento = contactInput.Documento
 	contact.ContactPerson = contactInput.ContactPerson
 
 	// Replace companies if provided

@@ -56,7 +56,7 @@ const CONTACT_FIELDS = [
   'photo', 'custom_fields', 'archived',
   'emails', 'phones', 'impps',
   'prefix', 'middle_name', 'suffix', 'organization', 'department',
-  'job_title', 'role', 'anniversary', 'rut', 'contact_person', 'companies'
+  'job_title', 'role', 'anniversary', 'rut', 'documento', 'contact_person', 'companies'
 ];
 
 export default function ContactDetailPage() {

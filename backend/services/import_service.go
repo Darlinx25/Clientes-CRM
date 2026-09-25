@@ -184,6 +184,9 @@ var headerToField = map[string]string{
 	"website": "url", "web site": "url", "url": "url", "homepage": "url",
 	"birthday": "birthday", "birth date": "birthday", "birthdate": "birthday", "dob": "birthday", "date of birth": "birthday",
 	"anniversary": "anniversary",
+	"rut":        "rut",
+	"documento":  "documento", "ci": "documento", "cédula": "documento", "cedula": "documento", "cedula de identidad": "documento",
+	"contact_person": "contact_person", "persona de contacto": "contact_person",
 	"address":     "address_street", "street address": "address_street", "home address": "address_street", "street": "address_street",
 	"city": "address_city", "town": "address_city",
 	"region": "address_region", "state": "address_region", "province": "address_region",
@@ -361,6 +364,9 @@ func ContactToPreviewMap(contact *models.Contact) map[string]interface{} {
 	set("nickname", contact.Nickname)
 	set("email", contact.Email)
 	set("phone", contact.Phone)
+	set("rut", contact.Rut)
+	set("documento", contact.Documento)
+	set("contact_person", contact.ContactPerson)
 	set("birthday", contact.Birthday)
 	set("anniversary", contact.Anniversary)
 	set("address", contact.Address)
@@ -754,6 +760,12 @@ func BuildContactFromRow(userID uint, headers []string, row []string, mappings [
 			if v != "" {
 				contact.Anniversary = NormalizeBirthday(v)
 			}
+		case "rut":
+			contact.Rut = v
+		case "documento":
+			contact.Documento = v
+		case "contact_person":
+			contact.ContactPerson = v
 		case "organization":
 			contact.Organization = v
 		case "department":
@@ -965,6 +977,9 @@ func CreateMergeNote(db *gorm.DB, userID uint, contactID uint, original *models.
 		"nickname":            {"Nickname", original.Nickname},
 		"email":               {"Email", original.Email},
 		"phone":               {"Phone", original.Phone},
+		"rut":                 {"Rut", original.Rut},
+		"documento":           {"Documento", original.Documento},
+		"contact_person":      {"Contact Person", original.ContactPerson},
 		"birthday":            {"Birthday", original.Birthday},
 		"anniversary":         {"Anniversary", original.Anniversary},
 		"address":             {"Address", original.Address},

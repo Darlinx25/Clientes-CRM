@@ -316,7 +316,7 @@ func GetAllNotes(c *gin.Context) {
 		like := "%" + foldTerm(search) + "%"
 		baseQuery = baseQuery.
 			Joins("LEFT JOIN contacts ON contacts.id = notes.contact_id").
-			Where("("+accentFoldExpr("notes.title")+" LIKE ? OR "+accentFoldExpr("notes.content")+" LIKE ? OR "+accentFoldExpr("contacts.firstname")+" LIKE ? OR "+accentFoldExpr("contacts.lastname")+" LIKE ?)", like, like, like, like)
+			Where("("+accentFoldExpr("notes.title")+" LIKE ? OR "+accentFoldExpr("notes.content")+" LIKE ? OR "+accentFoldExpr("contacts.firstname")+" LIKE ? OR "+accentFoldExpr("contacts.lastname")+" LIKE ? OR "+accentFoldExpr("(contacts.firstname || ' ' || contacts.lastname)")+" LIKE ? OR "+accentFoldExpr("(contacts.lastname || ' ' || contacts.firstname)")+" LIKE ?)", like, like, like, like, like, like)
 	}
 
 	countQuery := baseQuery.Session(&gorm.Session{})

@@ -92,6 +92,22 @@ export default function ContactInformation({
               />
             )}
 
+            {isOn('documento') && (
+              <EditableField
+                icon={<BadgeIcon sx={iconSx} />}
+                label={t('client.documento', 'Documento')}
+                field="documento"
+                value={contact.documento || ''}
+                isEditing={editingField === 'documento'}
+                editValue={editValue}
+                validationError={validationError}
+                onEditStart={onEditStart}
+                onEditCancel={onEditCancel}
+                onEditSave={onEditSave}
+                onEditValueChange={onEditValueChange}
+              />
+            )}
+
             {isOn('contact_person') && (
               <EditableField
                 icon={<ContactsIcon sx={iconSx} />}

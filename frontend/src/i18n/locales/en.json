@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Meerkat CRM",
+    "title": "Historial",
     "logout": "Logout",
     "loading": "Loading..."
   },
@@ -859,5 +859,8 @@
     "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete"
+  },
+  "client": {
+    "documento": "Document"
   }
 }

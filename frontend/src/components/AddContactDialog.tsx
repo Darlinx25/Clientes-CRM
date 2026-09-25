@@ -47,6 +47,7 @@ const emptyForm = {
   firstname: '',
   anniversary: '',
   rut: '',
+  documento: '',
   contact_person: '',
   contact_information: ''
 };
@@ -189,6 +190,7 @@ export default function AddContactDialog({
         firstname: formData.firstname,
         anniversary: anniversaryISO,
         rut: formData.rut.trim(),
+        documento: formData.documento.trim(),
         contact_person: formData.contact_person.trim(),
         contact_information: formData.contact_information.trim(),
         emails: cleanEmails,
@@ -255,6 +257,9 @@ export default function AddContactDialog({
           <Stack direction="row" spacing={2}>
             {isOn('rut') && (
               <TextField label={t('client.rut', 'RUT')} fullWidth value={formData.rut} onChange={handleChange('rut')} />
+            )}
+            {isOn('documento') && (
+              <TextField label={t('client.documento', 'Documento')} fullWidth value={formData.documento} onChange={handleChange('documento')} />
             )}
             {isOn('contact_person') && (
               <TextField label={t('client.contactPerson', 'Persona de Contacto')} fullWidth value={formData.contact_person} onChange={handleChange('contact_person')} />

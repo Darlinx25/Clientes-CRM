@@ -8,6 +8,7 @@ var ImportableContactFields = []string{
 	"firstname", "lastname", "middle_name", "prefix", "suffix", "nickname", "gender",
 	"birthday", "anniversary", "organization", "department", "job_title", "role",
 	"how_we_met", "food_preference", "work_information", "contact_information",
+	"rut", "documento", "contact_person",
 	// Multi-value values
 	"email", "phone", "url", "impp",
 	"address_street", "address_city", "address_region", "address_postal", "address_country",

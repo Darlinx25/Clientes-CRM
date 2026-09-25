@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Clientes",
+    "title": "Historial",
     "logout": "Cerrar sesión",
     "loading": "Cargando..."
   },
@@ -221,7 +221,8 @@
     "rut": "RUT",
     "contactPerson": "Persona de Contacto",
     "startDate": "Fecha de Inicio",
-    "comment": "Comentario"
+    "comment": "Comentario",
+    "documento": "Documento"
   },
   "companies": {
     "title": "Empresas",
@@ -371,6 +372,7 @@
     "noResults": "Ninguna nota coincide con los filtros",
     "fromDate": "Desde",
     "toDate": "Hasta",
+    "clearDates": "Limpiar fechas",
     "client": "Cliente"
   },
   "reminders": {

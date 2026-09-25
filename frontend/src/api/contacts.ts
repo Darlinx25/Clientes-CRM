@@ -69,6 +69,7 @@ export interface Contact {
   anniversary?: string;
   // Client-specific fields
   rut?: string;
+  documento?: string;
   contact_person?: string;
   companies?: Company[];
 }
@@ -117,7 +118,7 @@ export async function getContacts(
   if (includeArchived) queryParams.append('include_archived', 'true');
   if (archived !== undefined) queryParams.append('archived', archived.toString());
 
-  queryParams.append('fields', 'ID,firstname,lastname,nickname,photo_thumbnail,archived');
+  queryParams.append('fields', 'ID,firstname,lastname,nickname,photo_thumbnail,archived,rut');
 
   const response = await apiFetch(
     `${API_BASE_URL}/contacts?${queryParams.toString()}`,

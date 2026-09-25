@@ -65,53 +65,18 @@ export default function ContactTimeline({
 
   return (
     <>
-      <Paper sx={{ p: 1, mb: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
-          <TextField
-            size="small"
-            placeholder={t('notes.search')}
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-            sx={{ flex: 1, minWidth: 160 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            size="small"
-            label={t('notes.fromDate')}
-            type="date"
-            value={fromDate}
-            onChange={e => onFromDateChange(e.target.value)}
-            sx={{ width: 140 }}
-            slotProps={{ inputLabel: { shrink: true }, input: { placeholder: getDatePlaceholder() } }}
-          />
-          <TextField
-            size="small"
-            label={t('notes.toDate')}
-            type="date"
-            value={toDate}
-            onChange={e => onToDateChange(e.target.value)}
-            sx={{ width: 140 }}
-            slotProps={{ inputLabel: { shrink: true }, input: { placeholder: getDatePlaceholder() } }}
-          />
-        </Stack>
-      </Paper>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         {onAddNote && (
           <IconButton
             color="primary"
             size="small"
             onClick={onAddNote}
             title={t('contactDetail.addNote')}
+            className="contact-add-note-btn"
             sx={{
               width: 27,
               height: 27,
+              flexShrink: 0,
               bgcolor: 'primary.main',
               color: 'white',
               '&:hover': { bgcolor: 'primary.dark' },
@@ -121,22 +86,42 @@ export default function ContactTimeline({
             <AddIcon />
           </IconButton>
         )}
-        {onViewDeleted && (
-          <Button
-            size="small"
-            onClick={onViewDeleted}
-            sx={{
-              minWidth: 0,
-              p: '4px 6px',
-              color: 'text.disabled',
-              textTransform: 'none',
-              fontSize: '0.75rem',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {t('contactDetail.viewDeletedNotes')}
-          </Button>
-        )}
+        <Paper sx={{ p: 1, flex: 1, minWidth: 0 }}>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+            <TextField
+              size="small"
+              placeholder={t('notes.search')}
+              value={search}
+              onChange={e => onSearchChange(e.target.value)}
+              sx={{ flex: 1, minWidth: 160 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              size="small"
+              label={t('notes.fromDate')}
+              type="date"
+              value={fromDate}
+              onChange={e => onFromDateChange(e.target.value)}
+              sx={{ width: 140 }}
+              slotProps={{ inputLabel: { shrink: true }, input: { placeholder: getDatePlaceholder() } }}
+            />
+            <TextField
+              size="small"
+              label={t('notes.toDate')}
+              type="date"
+              value={toDate}
+              onChange={e => onToDateChange(e.target.value)}
+              sx={{ width: 140 }}
+              slotProps={{ inputLabel: { shrink: true }, input: { placeholder: getDatePlaceholder() } }}
+            />
+          </Stack>
+        </Paper>
       </Box>
 
       {notes.length === 0 ? (
@@ -234,6 +219,25 @@ export default function ContactTimeline({
           />
         </Box>
       )}
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 1 }}>
+        {onViewDeleted && (
+          <Button
+            size="small"
+            onClick={onViewDeleted}
+            sx={{
+              minWidth: 0,
+              p: '4px 6px',
+              color: 'text.disabled',
+              textTransform: 'none',
+              fontSize: '0.75rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {t('contactDetail.viewDeletedNotes')}
+          </Button>
+        )}
+      </Box>
     </>
   );
 }

@@ -23,8 +23,9 @@ const (
 	excelColumnPersona     = "ContactPerson"
 	excelColumnEmail       = "Email"
 	excelColumnCelular     = "Phone"
-	excelColumnRUT         = "Rut"
-	excelColumnNumEmpresa  = "CompanyNumber"
+excelColumnRUT         = "Rut"
+excelColumnDocumento = "Documento"
+excelColumnNumEmpresa  = "CompanyNumber"
 	excelColumnAniversario = "Anniversary"
 	excelColumnComentario  = "ContactInformation"
 	excelColumnAportacion  = "Aportacion"
@@ -49,6 +50,7 @@ type excelRow struct {
 	email           string
 	celular         string
 	rut             string
+	documento       string
 	numeroEmpresa   string
 	aniversario     string
 	comentario      string
@@ -62,6 +64,7 @@ type excelHeaders struct {
 	email       int
 	celular     int
 	rut         int
+	documento   int
 	numEmpresa  int
 	aniversario int
 	comentario  int
@@ -188,6 +191,7 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 	}
 	type clientAccumulator struct {
 		cliente         string
+		documento     string
 		personaContacto string
 		emails          []string
 		phones          []string
@@ -230,6 +234,9 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 		}
 		if parsed.personaContacto != "" {
 			acc.personaContacto = parsed.personaContacto
+		}
+		if parsed.documento != "" && acc.documento == "" {
+			acc.documento = parsed.documento
 		}
 		if parsed.email != "" {
 			acc.emails = appendUnique(acc.emails, splitMultiValues(parsed.email))
@@ -293,6 +300,7 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 					UserID:             userID,
 					Firstname:          acc.cliente,
 					Rut:                normRUT,
+					Documento:           acc.documento,
 					ContactPerson:      acc.personaContacto,
 					Anniversary:        acc.aniversario,
 					ContactInformation: acc.comentario,
@@ -330,6 +338,10 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 				changed := false
 				if acc.personaContacto != "" && contact.ContactPerson != acc.personaContacto {
 					contact.ContactPerson = acc.personaContacto
+					changed = true
+				}
+				if acc.documento != "" && contact.Documento != acc.documento {
+					contact.Documento = acc.documento
 					changed = true
 				}
 				if acc.aniversario != "" && contact.Anniversary != acc.aniversario {
@@ -455,6 +467,11 @@ func parseExcelHeaders(headerRow []string) (*excelHeaders, error) {
 		"teléfono":            excelColumnCelular,
 		"cel":                 excelColumnCelular,
 		"rut":                 excelColumnRUT,
+		"documento":          excelColumnDocumento,
+		"ci":                 excelColumnDocumento,
+		"cédula":             excelColumnDocumento,
+		"cedula":             excelColumnDocumento,
+		"cedula de identidad": excelColumnDocumento,
 		"numero de empresa":   excelColumnNumEmpresa,
 		"número de empresa":   excelColumnNumEmpresa,
 		"numero empresa":      excelColumnNumEmpresa,
@@ -472,7 +489,7 @@ func parseExcelHeaders(headerRow []string) (*excelHeaders, error) {
 		"aportacion":          excelColumnAportacion,
 		"aportación":          excelColumnAportacion,
 	}
-	h := &excelHeaders{cliente: -1, tipo: -1, persona: -1, email: -1, celular: -1, rut: -1, numEmpresa: -1, aniversario: -1, comentario: -1, aportacion: -1, found: map[string]bool{}}
+	h := &excelHeaders{cliente: -1, tipo: -1, persona: -1, email: -1, celular: -1, rut: -1, documento: -1, numEmpresa: -1, aniversario: -1, comentario: -1, aportacion: -1, found: map[string]bool{}}
 
 	for idx, cell := range headerRow {
 		normalized := normalizeHeader(cell)
@@ -505,6 +522,10 @@ func parseExcelHeaders(headerRow []string) (*excelHeaders, error) {
 				if h.rut == -1 {
 					h.rut = idx
 				}
+			case excelColumnDocumento:
+				if h.documento == -1 {
+					h.documento = idx
+				}
 			case excelColumnNumEmpresa:
 				if h.numEmpresa == -1 {
 					h.numEmpresa = idx
@@ -529,23 +550,6 @@ func parseExcelHeaders(headerRow []string) (*excelHeaders, error) {
 	if h.cliente == -1 {
 		return nil, fmt.Errorf("no se encontró la columna requerida \"Cliente\" en la primera fila")
 	}
-	missing := []string{}
-	definitions := map[string]string{
-		excelColumnTipo:       "Tipo de Empresa",
-		excelColumnPersona:    "Persona de Contacto",
-		excelColumnEmail:      "Email",
-		excelColumnCelular:    "Celular",
-		excelColumnRUT:        "RUT",
-		excelColumnNumEmpresa: "Número de Empresa",
-	}
-	for target, label := range definitions {
-		if !h.found[target] {
-			missing = append(missing, label)
-		}
-	}
-	if len(missing) > 0 {
-		return nil, fmt.Errorf("faltan columnas en el encabezado: %s", strings.Join(missing, ", "))
-	}
 
 	return h, nil
 }
@@ -565,6 +569,7 @@ func parseExcelRow(row []string, h *excelHeaders, lineNumber int) *excelRow {
 		email:           cell(h.email),
 		celular:         cell(h.celular),
 		rut:             cell(h.rut),
+		documento:       cell(h.documento),
 		numeroEmpresa:   cell(h.numEmpresa),
 		aniversario:     cell(h.aniversario),
 		comentario:      cell(h.comentario),

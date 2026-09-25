@@ -140,6 +140,7 @@ type ContactInput struct {
 
 	// Client-specific fields
 	Rut           string    `json:"rut" validate:"max=30"`
+	Documento     string    `json:"documento" validate:"max=30"`
 	ContactPerson string    `json:"contact_person" validate:"max=200"`
 	Companies     []Company `json:"companies" validate:"omitempty,max=50,dive"`
 }

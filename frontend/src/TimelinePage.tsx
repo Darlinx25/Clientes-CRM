@@ -86,6 +86,12 @@ const TimelinePage: React.FC = () => {
     setPage(1);
   };
 
+  const handleClearDates = () => {
+    setFromDate('');
+    setToDate('');
+    setPage(1);
+  };
+
   const handlePageChange = (_: ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
@@ -159,6 +165,15 @@ const TimelinePage: React.FC = () => {
             slotProps={{ inputLabel: { shrink: true }, input: { placeholder: getDatePlaceholder() } }}
             sx={{ width: 160 }}
           />
+          {(fromDate || toDate) && (
+            <Button
+              size="small"
+              onClick={handleClearDates}
+              sx={{ alignSelf: 'center', color: 'text.secondary', textTransform: 'none', whiteSpace: 'nowrap' }}
+            >
+              {t('timelinePage.clearDates')}
+            </Button>
+          )}
         </Box>
       </Paper>
 
