@@ -5,6 +5,73 @@ Basado en [Meerkat CRM](https://github.com/fbuchner/meerkat-crm) simplificado.
 
 ---
 
+> **Si solo querés USAR la app (y no programarla), leé esta sección primero.**
+> La app para Windows viene como **un solo archivo**: `historial.exe`. No se
+> instala nada: es un programa que corre solo y sirve la página web.
+
+## Uso en Windows (la app es un solo `.exe`)
+
+### Qué descargás y adónde va
+- El paquete listo para llevar es `dist/historial-windows.zip` (se genera con
+  `scripts/build-windows-exe.sh`).
+- Lo copiás a la PC de Windows, clic derecho → **"Extraer todo"** y queda en una
+  carpeta, por ejemplo `C:\Historial\`. Ahí quedan `historial.exe` y los `.cmd`
+  (`instalar-autoarranque`, `abrir-firewall`, `hacer-backup`, `iniciar`,
+  `desinstalar-autoarranque`).
+- **Importante:** la carpeta va en disco local. NO la pongas en OneDrive/
+  Dropbox/unidad de red: la base no debe vivir en carpetas sincronizadas.
+
+### Primer arranque
+1. Doble clic en `historial.exe` (se abre una ventana oscura: es la app
+   corriendo, no la cierres).
+2. Windows puede mostrar "Windows protegió su equipo" (el archivo no está
+   firmado): **"Más información" → "Ejecutar de todas formas"**.
+3. En esa misma PC abrí el navegador y entrá a `http://localhost:7300`.
+4. Login inicial: **admin / admin**. Cambiá esa contraseña cuanto antes
+   (Configuración → Cambiar Contraseña).
+
+### Que arranque sola al encender la PC (servidor sin nadie que la toque)
+- Clic derecho sobre `instalar-autoarranque.cmd` → **"Ejecutar como
+  administrador"**. Pide una vez la contraseña de Windows de esa PC y crea una
+  tarea "al iniciar el equipo" que corre `historial.exe` aunque **nadie inicie
+  sesión**.
+- Ojo: un acceso directo en `shell:startup` **NO sirve para este caso** (eso
+  arranca solo cuando un usuario inicia sesión). Buenísimo si la PC siempre
+  queda con alguien logueado; inútil en un servidor headless.
+- Para quitarlo: `desinstalar-autoarranque.cmd`.
+
+### Acceso desde otras computadoras / teléfonos de la red (firewall)
+- En Windows hace falta abrir el firewall **una sola vez** (en Linux no lo
+  notás porque ahí el firewall local no bloquea; Windows lo trae activo).
+- Clic derecho sobre `abrir-firewall.cmd` → **"Ejecutar como administrador"**
+  (habilita el puerto 7300).
+- Averiguá la IP de la PC servidor con `ipconfig` (IPv4, ej. 192.168.x.x).
+- Desde las demás computadoras entrás a `http://192.168.x.x:7300`.
+- Si solo vas a usar la app en la misma PC, este paso no hace falta.
+
+### Backups (copia de seguridad)
+- Entrá como admin a la web → **Configuración → "Hacer backup"**. Crea en
+  `C:\Historial\backups\` un archivo `historial-FECHA.zip` con la base y las
+  fotos, con la app corriendo (es consistente).
+- Copiá ese `.zip` a OTRO disco/USB. Un backup en el mismo disco no protege
+  contra un disco dañado.
+- Alternativa desde la máquina: doble clic en `hacer-backup.cmd`.
+
+### Actualizar la app
+1. Hacé un backup (paso anterior).
+2. Cerrá la app (o deshabilitá la tarea "Historial autoarranque"), reemplazá
+   `historial.exe` por la versión nueva y volvé a abrirlo.
+3. Los datos NO se tocan: viven en `C:\Historial\data\` y `C:\Historial\photos\`.
+   Las actualizaciones de la base se aplican solas en el primer arranque.
+
+### Cómo funciona por adentro 
+`historial.exe` contiene la página web, el programa y la base de datos. Al
+abrirlo levanta un mini servidor en el puerto 7300, abre la base
+(`data\meerkat.db`) y aplica los cambios de datos que hagan falta. Es un solo
+proceso liviano: la PC no se carga y aguanta varios usuarios a la vez.
+
+---
+
 ## Qué es esta app
 
 Un sistema interno para registrar y dar seguimiento a clientes de oficina. Cada cliente tiene una ficha con sus datos de contacto y un timeline donde se registran notas cronológicas de cada interacción o gestión realizada.
