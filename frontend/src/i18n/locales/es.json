@@ -476,6 +476,14 @@
       "error": "No pudimos cambiar tu contraseña. Inténtalo de nuevo.",
       "mismatch": "Las nuevas contraseñas no coinciden."
     },
+    "backup": {
+      "title": "Copia de seguridad",
+      "description": "Crea un archivo .zip con la base de datos y las fotos en la carpeta de backups del servidor.",
+      "button": "Hacer backup",
+      "creating": "Creando...",
+      "success": "Backup creado:",
+      "error": "No se pudo crear el backup. Inténtalo de nuevo."
+    },
     "export": {
       "title": "Exportar Datos",
       "description": "Descarga todos tus datos como archivo CSV. Incluye clientes, actividades, notas, recordatorios y relaciones. Las fotos de perfil no están incluidas.",

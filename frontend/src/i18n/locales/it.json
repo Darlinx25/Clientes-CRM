@@ -442,6 +442,14 @@
       "error": "Non siamo riusciti a cambiare la password. Riprova.",
       "mismatch": "Le nuove password non coincidono."
     },
+    "backup": {
+      "title": "Backup",
+      "description": "Crea un file .zip con database e foto nella cartella di backup del server.",
+      "button": "Crea backup",
+      "creating": "Creazione...",
+      "success": "Backup creato:",
+      "error": "Impossibile creare il backup. Riprova."
+    },
     "export": {
       "title": "Esporta Dati",
       "description": "Scarica tutti i tuoi dati come file CSV. Include contatti, attività, note, promemoria e rapporti. Le foto profilo non sono incluse.",

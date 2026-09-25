@@ -1,6 +1,6 @@
 // Admin API calls for user management
 import { apiFetch, API_BASE_URL, getAuthHeaders, parseErrorResponse } from './client';
-import type { User, UsersListResponse, UserUpdateInput } from '../types';
+import type { User, UsersListResponse, UserUpdateInput, BackupResult } from '../types';
 
 // Get current authenticated user's information
 export async function getCurrentUser(): Promise<User> {
@@ -85,4 +85,18 @@ export async function deleteUser(id: number): Promise<void> {
   if (!response.ok) {
     throw await parseErrorResponse(response);
   }
+}
+
+// Create a snapshot backup of the database and photos on the server (admin only)
+export async function createBackup(): Promise<BackupResult> {
+  const response = await apiFetch(`${API_BASE_URL}/admin/backup`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw await parseErrorResponse(response);
+  }
+
+  return response.json();
 }

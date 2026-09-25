@@ -89,6 +89,15 @@ export interface UsersListResponse {
 }
 
 /**
+ * Result of a server-side backup (admin only)
+ */
+export interface BackupResult {
+  path: string;
+  filename: string;
+  size_bytes: number;
+}
+
+/**
  * Input for updating a user
  */
 export interface UserUpdateInput {

@@ -442,6 +442,14 @@
       "error": "Nous n'avons pas pu changer votre mot de passe. Veuillez réessayer.",
       "mismatch": "Les nouveaux mots de passe ne correspondent pas."
     },
+    "backup": {
+      "title": "Sauvegarde",
+      "description": "Crée un fichier .zip avec la base de données et les photos dans le dossier de sauvegarde du serveur.",
+      "button": "Créer une sauvegarde",
+      "creating": "Création...",
+      "success": "Sauvegarde créée :",
+      "error": "Impossible de créer la sauvegarde. Veuillez réessayer."
+    },
     "export": {
       "title": "Exporter les données",
       "description": "Téléchargez toutes vos données au format CSV. Cela inclut les contacts, activités, notes, rappels et relations. Les photos de profil ne sont pas incluses.",

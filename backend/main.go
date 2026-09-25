@@ -60,6 +60,23 @@ func main() {
 	logger.Info().Msg("Validating configuration...")
 	cfg.ValidateOrPanic()
 
+	// `historial backup [dest]`: create a consistent snapshot archive without
+	// starting the server. Useful from scripts or a double-click shortcut.
+	// Default destination is the portable "backups" folder next to the exe.
+	if len(os.Args) > 1 && os.Args[1] == "backup" {
+		dest := cfg.BackupDir
+		if len(os.Args) > 2 {
+			dest = os.Args[2]
+		}
+		result, err := services.CreateBackup(cfg.DBPath, cfg.ProfilePhotoDir, dest)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Backup failed: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Backup created: %s (%d bytes)\n", result.Path, result.SizeBytes)
+		os.Exit(0)
+	}
+
 	logger.Info().Msg("Loading database and running migrations...")
 	db, err := database.InitDB(cfg.DBPath)
 	if err != nil {

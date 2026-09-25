@@ -27,6 +27,7 @@ type OIDCConfig struct {
 
 type Config struct {
 	DBPath                   string
+	BackupDir                string
 	ReminderTime             string
 	ReminderTimezone         string
 	FrontendURL              string
@@ -82,6 +83,7 @@ func LoadConfig() *Config {
 	// them), so this does not change the containerised deployment.
 	dbPath := getEnv("SQLITE_DB_PATH", filepath.Join(exeDir(), "data", "meerkat.db"))
 	profilePhotoDir := getEnv("PROFILE_PHOTO_DIR", filepath.Join(exeDir(), "photos"))
+	backupDir := getEnv("BACKUP_DIR", filepath.Join(exeDir(), "backups"))
 
 	// If JWT_SECRET_KEY is not provided, persist a generated secret next to the
 	// database so logins survive restarts with zero configuration.
@@ -92,6 +94,7 @@ func LoadConfig() *Config {
 
 	cfg := &Config{
 		DBPath:                  dbPath,
+		BackupDir:               backupDir,
 		ReminderTime:            getEnv("REMINDER_TIME", "12:00"),
 		ReminderTimezone:        getEnv("REMINDER_TIMEZONE", "UTC"),
 		FrontendURL:             getEnv("FRONTEND_URL", "*"),
@@ -123,7 +126,7 @@ func LoadConfig() *Config {
 
 	// Ensure the directories the app writes to exist (DB comes with migrations,
 	// photos are written on upload).
-	for _, dir := range []string{filepath.Dir(cfg.DBPath), cfg.ProfilePhotoDir} {
+	for _, dir := range []string{filepath.Dir(cfg.DBPath), cfg.ProfilePhotoDir, cfg.BackupDir} {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			log.Printf("WARN: could not create directory %s: %v", dir, err)
 		}

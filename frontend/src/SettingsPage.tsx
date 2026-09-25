@@ -19,8 +19,9 @@ import { SelectChangeEvent } from '@mui/material/Select';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import BackupIcon from '@mui/icons-material/Backup';
 import { changePassword } from './api/auth';
-import { getCurrentUser } from './api/admin';
+import { getCurrentUser, createBackup } from './api/admin';
 import { isAdmin } from './auth';
 import { ThemePreference, useThemePreference } from './AppThemeProvider';
 import UserManagementSection from './components/UserManagementSection';
@@ -35,6 +36,9 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [backupError, setBackupError] = useState('');
+  const [backupSuccess, setBackupSuccess] = useState('');
 
   const handleThemeChange = (event: SelectChangeEvent<ThemePreference>) => {
     setThemePreference(event.target.value as ThemePreference);
@@ -70,6 +74,22 @@ export default function SettingsPage() {
       setPasswordError(errorMessage);
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleBackup = async () => {
+    setCreatingBackup(true);
+    setBackupError('');
+    setBackupSuccess('');
+
+    try {
+      const result = await createBackup();
+      setBackupSuccess(`${t('settings.backup.success')} ${result.path}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t('settings.backup.error');
+      setBackupError(errorMessage);
+    } finally {
+      setCreatingBackup(false);
     }
   };
 
@@ -168,6 +188,29 @@ export default function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      {isAdmin() && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <BackupIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                {t('settings.backup.title')}
+              </Typography>
+            </Box>
+            <Divider sx={{ mb: 1.5 }} />
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              {t('settings.backup.description')}
+            </Typography>
+            {backupError && <Alert severity="error" sx={{ py: 0, mb: 1 }}>{backupError}</Alert>}
+            {backupSuccess && <Alert severity="success" sx={{ py: 0, mb: 1 }}>{backupSuccess}</Alert>}
+            <Button variant="contained" size="small" onClick={handleBackup} disabled={creatingBackup}>
+              {creatingBackup ? t('settings.backup.creating') : t('settings.backup.button')}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {isAdmin() && <UserManagementSection />}
     </Box>

@@ -207,6 +207,7 @@ func RegisterRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, oidcPro
 			admin.POST("/trigger-reminders", func(c *gin.Context) {
 				controllers.TriggerReminders(c, *cfg)
 			})
+			admin.POST("/backup", controllers.CreateBackup)
 		}
 	}
 

@@ -4,8 +4,8 @@
 # double-clicked on a Windows machine with nothing installed.
 #
 # Output:
-#   dist/clientes-crm.exe      (Windows 64-bit, the file to copy/share)
-#   dist/clientes-crm-linux    (Linux binary to verify locally)
+#   dist/historial.exe      (Windows 64-bit, the file to copy/share)
+#   dist/historial-linux    (Linux binary to verify locally)
 #
 # Usage:
 #   ./scripts/build-windows-exe.sh
@@ -43,7 +43,7 @@ echo "==> Compiling Windows .exe"
   cd "$BACKEND"
   CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
     go build -tags web_embed -trimpath -ldflags "-s -w" \
-    -o "$OUT/clientes-crm.exe" .
+    -o "$OUT/historial.exe" .
 )
 
 echo "==> Compiling Linux test binary"
@@ -51,12 +51,12 @@ echo "==> Compiling Linux test binary"
   cd "$BACKEND"
   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -tags web_embed -trimpath -ldflags "-s -w" \
-    -o "$OUT/clientes-crm-linux" .
+    -o "$OUT/historial-linux" .
 )
 
 echo ""
 echo "Done."
-echo "  dist/clientes-crm.exe  -> copy to the Windows PC, double-click."
-echo "  dist/clientes-crm-linux-> local test binary (this machine)."
+echo "  dist/historial.exe   -> copy to the Windows PC, double-click."
+echo "  dist/historial-linux -> local test binary (this machine)."
 echo ""
 echo "First run creates data/ and photos/ next to the binary."
