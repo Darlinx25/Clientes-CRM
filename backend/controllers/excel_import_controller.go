@@ -179,14 +179,14 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 		return nil, err
 	}
 
-	// Fixed list of company types, resolved by name (case-insensitive)
+	// Fixed list of company types, resolved by folded name (case/accent-insensitive).
 	var companyTypes []models.CompanyType
 	if err := db.Order("name ASC").Find(&companyTypes).Error; err != nil {
 		return nil, fmt.Errorf("no se pudo cargar los tipos de empresa: %w", err)
 	}
 	typeByName := make(map[string]models.CompanyType, len(companyTypes))
 	for _, t := range companyTypes {
-		typeByName[strings.ToLower(strings.TrimSpace(t.Name))] = t
+		typeByName[foldTerm(strings.TrimSpace(t.Name))] = t
 	}
 
 	// Map dedup key (RUT|Denominación, or name:Denominación) -> accumulated data
@@ -431,15 +431,73 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 	return result, nil
 }
 
-// resolveTypeEntities maps a set of type names to the matching CompanyType rows from the fixed list.
-func resolveTypeEntities(typeByName map[string]models.CompanyType, tipos map[string]bool) []models.CompanyType {
-	list := make([]models.CompanyType, 0, len(tipos))
-	for nome := range tipos {
-		if t, ok := typeByName[strings.ToLower(strings.TrimSpace(nome))]; ok {
+// importCompanyTypeAliases maps abbreviations commonly used in spreadsheets (and
+// their compact form: lowercase, accents folded, punctuation stripped) to the
+// canonical company type name stored in the app. This lets a sheet that writes
+// "SD" or "IMP PAT" be imported as "Serv Dom" / "Imp Pat".
+var importCompanyTypeAliases = map[string]string{
+	"admin":          "Administración", // Administracion / ADMIN
+	"sd":             "Serv Dom",       // SD / ServD / SERVICIODOMESTICO
+	"impat":          "Imp Pat",        // IMPAT / ImpPat / IMP.PAT
+	"pjext":          "PJExt",          // PJEXT / Pj Ext
+	"rtasfinexter":   "RtasFinExter",   // RASFINEXTER / RtasFinExter / Rentas Exterior
+	"rentasexterior": "RtasFinExter",   // the long form, kept for legacy sheets
+}
+
+// resolveTypeEntities maps a set of type names to the matching CompanyType rows
+// from the fixed list. Each raw cell value is matched by folded name first and,
+// failing that, against the spreadsheet abbreviations in importCompanyTypeAliases.
+// The result is deduplicated by type ID.
+func resolveTypeEntities(typeByName map[string]models.CompanyType, tipoByRaw map[string]bool) []models.CompanyType {
+	var tipos []string
+	for raw := range tipoByRaw {
+		tipos = append(tipos, raw)
+	}
+	return resolveTypeStrings(typeByName, tipos)
+}
+
+// resolveTypeStrings resolves a list of raw type strings (folded name first,
+// alias second) to unique CompanyType rows.
+func resolveTypeStrings(typeByName map[string]models.CompanyType, rawTipos []string) []models.CompanyType {
+	list := make([]models.CompanyType, 0, len(rawTipos))
+	seen := make(map[uint]bool, len(rawTipos))
+	for _, raw := range rawTipos {
+		t, ok := matchCompanyType(typeByName, raw)
+		if ok && !seen[t.ID] {
+			seen[t.ID] = true
 			list = append(list, t)
 		}
 	}
 	return list
+}
+
+// matchCompanyType resolves a single raw spreadsheet value to a CompanyType,
+// first by folded name ("Administracion" matches "Administración") and then by
+// the compact abbreviation table ("SD" matches "Serv Dom").
+func matchCompanyType(typeByName map[string]models.CompanyType, raw string) (models.CompanyType, bool) {
+	if t, ok := typeByName[foldTerm(strings.TrimSpace(raw))]; ok {
+		return t, true
+	}
+	canonical, ok := importCompanyTypeAliases[compactTerm(raw)]
+	if !ok {
+		return models.CompanyType{}, false
+	}
+	t, found := typeByName[foldTerm(canonical)]
+	return t, found
+}
+
+// compactTerm folds a spreadsheet token to lower-case ASCII letters/digits only,
+// so "IMP PAT", "imp.pat" and "IMPAT" all reduce to "impat".
+func compactTerm(s string) string {
+	folded := foldTerm(s)
+	var b strings.Builder
+	b.Grow(len(folded))
+	for _, r := range folded {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // mergeCompanyTypes unions tlist into the company's existing types.

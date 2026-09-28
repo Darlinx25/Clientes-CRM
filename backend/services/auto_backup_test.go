@@ -46,8 +46,9 @@ func TestSaveAndGetAutoBackupConfig(t *testing.T) {
 	assert.False(t, cfg.Enabled)
 	assert.Equal(t, "friday", cfg.Weekday)
 	assert.Equal(t, "18:00", cfg.Time)
+	assert.Equal(t, "", cfg.Timezone, "defaults to the server timezone")
 
-	err = SaveAutoBackupConfig(db, AutoBackupConfig{Enabled: true, Weekday: "monday", Time: "07:30"})
+	err = SaveAutoBackupConfig(db, AutoBackupConfig{Enabled: true, Weekday: "monday", Time: "07:30", Timezone: "America/Santiago"})
 	require.NoError(t, err)
 
 	cfg, err = GetAutoBackupConfig(db)
@@ -55,6 +56,19 @@ func TestSaveAndGetAutoBackupConfig(t *testing.T) {
 	assert.True(t, cfg.Enabled)
 	assert.Equal(t, "monday", cfg.Weekday)
 	assert.Equal(t, "07:30", cfg.Time)
+	assert.Equal(t, "America/Santiago", cfg.Timezone)
+}
+
+func TestScheduleLocation(t *testing.T) {
+	scheduler := mustScheduler(t, setupAutoBackupDB(t))
+
+	// Stored IANA zone wins.
+	loc := scheduler.scheduleLocation(AutoBackupConfig{Timezone: "America/Santiago"})
+	assert.Equal(t, "America/Santiago", loc.String())
+
+	// Empty or invalid zone falls back to the server location.
+	assert.Same(t, scheduler.loc, scheduler.scheduleLocation(AutoBackupConfig{Timezone: ""}))
+	assert.Same(t, scheduler.loc, scheduler.scheduleLocation(AutoBackupConfig{Timezone: "not/a/zone"}))
 }
 
 func TestSaveAutoBackupConfigInvalidInput(t *testing.T) {
@@ -67,6 +81,10 @@ func TestSaveAutoBackupConfigInvalidInput(t *testing.T) {
 	err = SaveAutoBackupConfig(db, AutoBackupConfig{Enabled: true, Weekday: "friday", Time: "25:00"})
 	require.Error(t, err)
 	assert.Contains(t, strings.ToLower(err.Error()), "hora")
+
+	err = SaveAutoBackupConfig(db, AutoBackupConfig{Enabled: true, Weekday: "friday", Time: "18:00", Timezone: "Not/AZone"})
+	require.Error(t, err)
+	assert.Contains(t, strings.ToLower(err.Error()), "horaria")
 
 	// Invalid values are never persisted; defaults survive.
 	cfg, err := GetAutoBackupConfig(db)

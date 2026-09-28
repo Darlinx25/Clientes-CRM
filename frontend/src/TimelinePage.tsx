@@ -1,14 +1,14 @@
-import { useState, useMemo, ChangeEvent } from 'react';
+import { useState, useMemo, ChangeEvent, MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
   Paper,
-  TextField,
   Button,
   Pagination,
   Link,
+  Avatar,
 } from '@mui/material';
 import {
   Timeline,
@@ -27,7 +27,9 @@ import { createUnassignedNote, Note } from './api/notes';
 import AddNoteDialog from './components/AddNoteDialog';
 import NoteEditedInfo from './components/NoteEditedInfo';
 import { handleError } from './utils/errorHandler';
+import { getInitials, avatarColorFor } from './utils/avatar';
 import { useDateFormat } from './DateFormatProvider';
+import NotesFilterBar from './components/NotesFilterBar';
 
 const NOTES_PER_PAGE = 15;
 
@@ -42,7 +44,7 @@ function isoMonthsAgo(months: number): string {
 
 const TimelinePage: React.FC = () => {
   const { t } = useTranslation();
-  const { formatDate, getDatePlaceholder } = useDateFormat();
+  const { formatDate } = useDateFormat();
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput, 400);
@@ -83,12 +85,6 @@ const TimelinePage: React.FC = () => {
 
   const handleToDateChange = (value: string) => {
     setToDate(value);
-    setPage(1);
-  };
-
-  const handleClearDates = () => {
-    setFromDate('');
-    setToDate('');
     setPage(1);
   };
 
@@ -135,47 +131,14 @@ const TimelinePage: React.FC = () => {
         </Button>
       </Box>
 
-      <Paper sx={{ p: 1.5, mb: 2 }}>
-        <Box display="flex" gap={2} flexWrap="wrap">
-          <TextField
-            size="small"
-            label={t('timelinePage.search')}
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            variant="outlined"
-            sx={{ flex: 1, minWidth: 200 }}
-          />
-          <TextField
-            size="small"
-            label={t('timelinePage.fromDate')}
-            type="date"
-            value={fromDate}
-            onChange={(e) => handleFromDateChange(e.target.value)}
-            variant="outlined"
-            slotProps={{ inputLabel: { shrink: true }, input: { placeholder: getDatePlaceholder() } }}
-            sx={{ width: 160 }}
-          />
-          <TextField
-            size="small"
-            label={t('timelinePage.toDate')}
-            type="date"
-            value={toDate}
-            onChange={(e) => handleToDateChange(e.target.value)}
-            variant="outlined"
-            slotProps={{ inputLabel: { shrink: true }, input: { placeholder: getDatePlaceholder() } }}
-            sx={{ width: 160 }}
-          />
-          {(fromDate || toDate) && (
-            <Button
-              size="small"
-              onClick={handleClearDates}
-              sx={{ alignSelf: 'center', color: 'text.secondary', textTransform: 'none', whiteSpace: 'nowrap' }}
-            >
-              {t('timelinePage.clearDates')}
-            </Button>
-          )}
-        </Box>
-      </Paper>
+      <NotesFilterBar
+        search={searchInput}
+        onSearchChange={handleSearchChange}
+        fromDate={fromDate}
+        toDate={toDate}
+        onFromDateChange={handleFromDateChange}
+        onToDateChange={handleToDateChange}
+      />
 
       {isInitialLoading ? (
         <ListSkeleton count={8} />
@@ -197,6 +160,11 @@ const TimelinePage: React.FC = () => {
         >
           {notes.map((note, index) => {
             const contactName = formatContactName(note);
+            const isContactClickable = contactName != null && note.contact != null;
+            const openContact = (e: MouseEvent<HTMLElement>) => {
+              e.preventDefault();
+              navigate(`/contacts/${note.contact!.ID}`);
+            };
             return (
               <TimelineItem key={note.ID}>
                 <TimelineSeparator>
@@ -207,67 +175,94 @@ const TimelinePage: React.FC = () => {
                 </TimelineSeparator>
                 <TimelineContent sx={{ flex: 0.8, minWidth: 0 }}>
                   <Paper elevation={2} sx={{ p: 2 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        {note.title && (
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, overflowWrap: 'anywhere' }}>
-                            {note.title}
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                        {contactName && isContactClickable && (
+                          <Avatar
+                            component="button"
+                            onClick={openContact}
+                            title={contactName}
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              flexShrink: 0,
+                              bgcolor: avatarColorFor(contactName),
+                              fontSize: '1rem',
+                              fontWeight: 700,
+                              color: '#fff',
+                              cursor: 'pointer',
+                              border: 'none',
+                            }}
+                          >
+                            {getInitials(contactName)}
+                          </Avatar>
+                        )}
+                        {contactName && isContactClickable ? (
+                          <Link
+                            component="button"
+                            variant="h6"
+                            underline="hover"
+                            onClick={openContact}
+                            sx={{
+                              display: 'block',
+                              ml: 1.5,
+                              fontWeight: 700,
+                              fontSize: '1.06rem',
+                              lineHeight: 1.3,
+                              textAlign: 'left',
+                              textTransform: 'none',
+                              cursor: 'pointer',
+                              overflowWrap: 'anywhere',
+                            }}
+                          >
+                            {contactName}
+                          </Link>
+                        ) : (
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.06rem', lineHeight: 1.3 }}>
+                            {note.title || t('contactDetail.note')}
                           </Typography>
                         )}
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            whiteSpace: 'pre-wrap',
-                            overflowWrap: 'anywhere',
-                            wordBreak: 'break-word',
-                            maxHeight: 260,
-                            overflowY: 'auto',
-                          }}
-                        >
-                          {note.content}
-                        </Typography>
-                        <NoteEditedInfo note={note} />
-                        {contactName && (
-                          <Box sx={{ mt: 1 }}>
-                            <Link
-                              component="button"
-                              variant="caption"
-                              underline="hover"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                navigate(`/contacts/${note.contact!.ID}`);
-                              }}
-                              sx={{
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                px: 1,
-                                py: 0.5,
-                                borderRadius: '16px',
-                                backgroundColor: 'rgba(76, 175, 80, 0.14)',
-                                color: '#2e7d32',
-                                fontWeight: 600,
-                                textDecoration: 'none',
-                                transition: 'background-color 0.2s, color 0.2s',
-                                '&:hover': {
-                                  backgroundColor: 'rgba(76, 175, 80, 0.26)',
-                                  textDecoration: 'underline'
-                                },
-                                '&:focus-visible': {
-                                  outline: '2px solid rgba(76, 175, 80, 0.5)',
-                                  outlineOffset: 2,
-                                  borderRadius: '16px'
-                                }
-                              }}
-                            >
-                              {contactName}
-                            </Link>
-                          </Box>
-                        )}
                       </Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap', ml: 1 }}>
-                        {formatDate(note.date)}
+                      {formatDate(note.date) && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ whiteSpace: 'nowrap', ml: 1, flexShrink: 0 }}
+                        >
+                          {formatDate(note.date)}
+                        </Typography>
+                      )}
+                    </Box>
+                    {isContactClickable && note.title && (
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: 'text.primary',
+                          fontWeight: 600,
+                          mt: 1,
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        {note.title}
                       </Typography>
+                    )}
+                    {note.content && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          mt: 1,
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'anywhere',
+                          wordBreak: 'break-word',
+                          maxHeight: 260,
+                          overflowY: 'auto',
+                        }}
+                      >
+                        {note.content}
+                      </Typography>
+                    )}
+                    <Box sx={{ mt: 0.75 }}>
+                      <NoteEditedInfo note={note} />
                     </Box>
                   </Paper>
                 </TimelineContent>

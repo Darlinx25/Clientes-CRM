@@ -104,6 +104,7 @@ export interface AutoBackupConfig {
   enabled: boolean;
   weekday: string; // "sunday".."saturday"
   time: string;    // "HH:MM"
+  timezone: string; // IANA name, or "" for the server default
 }
 
 /**

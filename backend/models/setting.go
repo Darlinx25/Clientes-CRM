@@ -15,7 +15,8 @@ func (AppSetting) TableName() string { return "app_settings" }
 // 24h "HH:MM" clock; both are validated in services.SaveAutoBackupConfig so the
 // user gets a friendly message instead of a schema error.
 type AutoBackupInput struct {
-	Enabled bool   `json:"enabled"`
-	Weekday string `json:"weekday" validate:"required,min=3,max=9"`
-	Time    string `json:"time" validate:"required,min=5,max=5"`
+	Enabled  bool   `json:"enabled"`
+	Weekday  string `json:"weekday" validate:"required,min=3,max=9"`
+	Time     string `json:"time" validate:"required,min=5,max=5"`
+	Timezone string `json:"timezone"`
 }

@@ -12,8 +12,8 @@ import (
 
 // TestMigrationsApplyAndRollback runs the full migration chain on a fresh
 // database, then rolls back one step at a time verifying the newest migration
-// (auto-backup settings) and the newest data migration (Exonerado company type)
-// are both reversible.
+// (company type rename), the auto-backup settings table and the newest data
+// migration (Exonerado company type) are all reversible.
 func TestMigrationsApplyAndRollback(t *testing.T) {
 	dir := t.TempDir()
 	dbPath := filepath.Join(dir, "mig.db")
@@ -26,6 +26,11 @@ func TestMigrationsApplyAndRollback(t *testing.T) {
 
 	assertRowExists(t, dbPath, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='app_settings'", 1)
 	assertRowExists(t, dbPath, "SELECT COUNT(*) FROM company_types WHERE name = 'Exonerado'", 1)
+	assertRowExists(t, dbPath, "SELECT COUNT(*) FROM company_types WHERE name = 'RtasFinExter'", 1)
+
+	// Roll back 000039 (Rentas Exterior -> RtasFinExter rename).
+	require.NoError(t, MigrateDown(dbPath))
+	assertRowExists(t, dbPath, "SELECT COUNT(*) FROM company_types WHERE name = 'Rentas Exterior'", 1)
 
 	// Roll back 000038 (app_settings) — the backup feature starts disabled.
 	require.NoError(t, MigrateDown(dbPath))

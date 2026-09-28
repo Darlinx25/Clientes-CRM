@@ -19,14 +19,13 @@ import (
 // every tick, so admin changes apply on the next tick without ever mutating a
 // running gocron scheduler (which is not thread-safe).
 const (
-	backupSettingEnabled = "auto_backup_enabled"
-	backupSettingWeekday = "auto_backup_weekday"
-	backupSettingTime    = "auto_backup_time"
-
-	defaultBackupWeekday = "friday"
-	defaultBackupTime    = "18:00"
-
-	backupPollInterval = 30 * time.Second
+	backupSettingEnabled   = "auto_backup_enabled"
+	backupSettingWeekday   = "auto_backup_weekday"
+	backupSettingTime      = "auto_backup_time"
+	backupSettingTimezone  = "auto_backup_timezone"
+	defaultBackupWeekday   = "friday"
+	defaultBackupTime      = "18:00"
+	backupPollInterval     = 30 * time.Second
 )
 
 // validWeekdays maps the accepted weekday names to true. Weekday is stored in
@@ -39,10 +38,13 @@ var validWeekdays = map[string]bool{
 var backupTimeRe = regexp.MustCompile(`^([01][0-9]|2[0-3]):[0-5][0-9]$`)
 
 // AutoBackupConfig is the server-wide automatic backup schedule.
+// Timezone is an optional IANA name (e.g. "America/Santiago"); when empty the
+// scheduler falls back to the server's configured reminder timezone.
 type AutoBackupConfig struct {
-	Enabled bool   `json:"enabled"`
-	Weekday string `json:"weekday"` // "sunday".."saturday"
-	Time    string `json:"time"`    // 24h "HH:MM"
+	Enabled  bool   `json:"enabled"`
+	Weekday  string `json:"weekday"`  // "sunday".."saturday"
+	Time     string `json:"time"`     // 24h "HH:MM"
+	Timezone string `json:"timezone"` // IANA name, or "" for the server default
 }
 
 // SaveAutoBackupConfig validates and persists the automatic backup schedule.
@@ -55,11 +57,18 @@ func SaveAutoBackupConfig(db *gorm.DB, in AutoBackupConfig) error {
 	if !backupTimeRe.MatchString(timeVal) {
 		return fmt.Errorf("la hora no es válida: %q (use el formato HH:MM, ej. 18:00)", in.Time)
 	}
+	timezone := strings.TrimSpace(in.Timezone)
+	if timezone != "" {
+		if _, err := time.LoadLocation(timezone); err != nil {
+			return fmt.Errorf("la zona horaria no es válida: %q (use un nombre IANA, ej. America/Santiago o UTC)", in.Timezone)
+		}
+	}
 
 	values := map[string]string{
-		backupSettingEnabled: "0",
-		backupSettingWeekday: weekday,
-		backupSettingTime:    timeVal,
+		backupSettingEnabled:  "0",
+		backupSettingWeekday:  weekday,
+		backupSettingTime:     timeVal,
+		backupSettingTimezone: timezone,
 	}
 	if in.Enabled {
 		values[backupSettingEnabled] = "1"
@@ -93,6 +102,10 @@ func GetAutoBackupConfig(db *gorm.DB) (AutoBackupConfig, error) {
 		case backupSettingTime:
 			if backupTimeRe.MatchString(row.Value) {
 				cfg.Time = row.Value
+			}
+		case backupSettingTimezone:
+			if _, err := time.LoadLocation(strings.TrimSpace(row.Value)); err == nil {
+				cfg.Timezone = strings.TrimSpace(row.Value)
 			}
 		}
 	}
@@ -148,7 +161,7 @@ func (a *AutoBackupScheduler) Poll() {
 		return
 	}
 
-	now := time.Now().In(a.loc)
+	now := time.Now().In(a.scheduleLocation(schedule))
 	if !matchesSchedule(schedule, now) {
 		return
 	}
@@ -159,6 +172,17 @@ func (a *AutoBackupScheduler) Poll() {
 
 	key := now.Format("2006-01-02 15:04")
 	go a.runBackup(key)
+}
+
+// scheduleLocation resolves the timezone the schedule is evaluated in: the
+// stored IANA zone when set, otherwise the server's reminder timezone.
+func (a *AutoBackupScheduler) scheduleLocation(schedule AutoBackupConfig) *time.Location {
+	if schedule.Timezone != "" {
+		if loc, err := time.LoadLocation(schedule.Timezone); err == nil {
+			return loc
+		}
+	}
+	return a.loc
 }
 
 // tryClaim reserves the given wall-clock minute for a backup run. It reports

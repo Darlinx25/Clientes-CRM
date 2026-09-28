@@ -59,9 +59,10 @@ func UpdateAutoBackupSchedule(c *gin.Context) {
 	}
 
 	schedule := services.AutoBackupConfig{
-		Enabled: input.Enabled,
-		Weekday: input.Weekday,
-		Time:    input.Time,
+		Enabled:  input.Enabled,
+		Weekday:  input.Weekday,
+		Time:     input.Time,
+		Timezone: input.Timezone,
 	}
 	if err := services.SaveAutoBackupConfig(db, schedule); err != nil {
 		apperrors.AbortWithError(c, apperrors.ErrInvalidInput("time", err.Error()))

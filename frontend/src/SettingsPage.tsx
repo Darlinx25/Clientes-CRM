@@ -65,6 +65,8 @@ export default function SettingsPage() {
     { value: 'sunday', label: 'Domingo' },
   ];
   const weekdayLabel = WEEKDAYS.find(d => d.value === autoWeekday)?.label ?? autoWeekday;
+  const browserTimezone =
+    (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'UTC';
 
   const handleThemeChange = (event: SelectChangeEvent<ThemePreference>) => {
     setThemePreference(event.target.value as ThemePreference);
@@ -126,6 +128,7 @@ export default function SettingsPage() {
         enabled: autoEnabled,
         weekday: autoWeekday,
         time: autoTime,
+        timezone: browserTimezone,
       });
       setAutoEnabled(saved.enabled);
       setAutoWeekday(saved.weekday);
@@ -345,6 +348,7 @@ export default function SettingsPage() {
                   weekday: weekdayLabel,
                   time: autoTime,
                 })}
+                {` (${t('settings.backup.timezone', 'zona horaria')}: ${browserTimezone})`}
               </Typography>
             )}
           </CardContent>

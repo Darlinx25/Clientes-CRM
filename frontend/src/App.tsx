@@ -73,7 +73,7 @@ function AppContent({ token, setToken }: { token: string | null; setToken: (toke
       <Box
         component="nav"
         sx={{
-          width: { xs: 200, sm: 220 },
+          width: { xs: 190, sm: 209 },
           flexShrink: 0,
           position: 'sticky',
           top: 0,

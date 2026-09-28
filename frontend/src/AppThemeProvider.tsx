@@ -17,7 +17,7 @@ const THEME_PREFERENCE_STORAGE_KEY = "themePreference";
 
 const getStoredPreference = (): ThemePreference => {
   if (typeof window === "undefined") {
-    return "system";
+    return "light";
   }
 
   const storedValue = window.localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY);
@@ -25,7 +25,7 @@ const getStoredPreference = (): ThemePreference => {
     return storedValue;
   }
 
-  return "system";
+  return "light";
 };
 
 const getSystemPrefersDark = () => {

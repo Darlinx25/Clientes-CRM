@@ -493,6 +493,7 @@
       "autoSaved": "Configuración del backup automático guardada.",
       "autoError": "No se pudo guardar la configuración del backup automático.",
       "autoPreview": "Se hará un backup automático cada {{weekday}} a las {{time}}.",
+      "timezone": "hora del equipo",
       "weekdays": {
         "monday": "Lunes",
         "tuesday": "Martes",

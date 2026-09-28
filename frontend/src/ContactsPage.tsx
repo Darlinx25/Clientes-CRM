@@ -28,6 +28,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import { getInitials, avatarColorFor } from './utils/avatar';
 import { ContactListSkeleton } from './components/LoadingSkeletons';
 
 export default function ContactsPage() {
@@ -220,7 +221,9 @@ export default function ContactsPage() {
       ) : (
         <>
           <Stack spacing={2}>
-            {filteredContacts.map(contact => (
+            {filteredContacts.map(contact => {
+              const avatarName = [contact.firstname, contact.lastname].filter(Boolean).join(' ');
+              return (
               <Card
                 key={contact.ID}
                 component={Link}
@@ -238,8 +241,19 @@ export default function ContactsPage() {
                   }
                 }}
               >
-                <Avatar src={contact.photo_thumbnail || undefined} sx={{ width: 48, height: 48, mr: 1.5, bgcolor: 'primary.main' }}>
-                  {contact.firstname.charAt(0)}
+                <Avatar
+                  src={contact.photo_thumbnail || undefined}
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    mr: 1.5,
+                    bgcolor: avatarColorFor(avatarName),
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                  }}
+                >
+                  {avatarName ? getInitials(avatarName) : (contact.firstname.charAt(0) || '?')}
                 </Avatar>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -262,7 +276,8 @@ export default function ContactsPage() {
                   )}
                 </Box>
               </Card>
-            ))}
+              );
+            })}
           </Stack>
           {totalContacts > 0 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
