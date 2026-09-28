@@ -1,6 +1,6 @@
 // Admin API calls for user management
 import { apiFetch, API_BASE_URL, getAuthHeaders, parseErrorResponse } from './client';
-import type { User, UsersListResponse, UserUpdateInput, BackupResult } from '../types';
+import type { User, UsersListResponse, UserUpdateInput, BackupResult, AutoBackupConfig } from '../types';
 
 // Get current authenticated user's information
 export async function getCurrentUser(): Promise<User> {
@@ -92,6 +92,37 @@ export async function createBackup(): Promise<BackupResult> {
   const response = await apiFetch(`${API_BASE_URL}/admin/backup`, {
     method: 'POST',
     headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw await parseErrorResponse(response);
+  }
+
+  return response.json();
+}
+
+// Get the automatic backup schedule (admin only)
+export async function getAutoBackupConfig(): Promise<AutoBackupConfig> {
+  const response = await apiFetch(`${API_BASE_URL}/admin/auto-backup`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw await parseErrorResponse(response);
+  }
+
+  return response.json();
+}
+
+// Update the automatic backup schedule (admin only)
+export async function updateAutoBackupConfig(
+  data: AutoBackupConfig
+): Promise<AutoBackupConfig> {
+  const response = await apiFetch(`${API_BASE_URL}/admin/auto-backup`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) {

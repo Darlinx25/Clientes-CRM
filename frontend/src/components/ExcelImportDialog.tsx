@@ -161,7 +161,7 @@ export default function ExcelImportDialog({
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {t(
           'contacts.importExcel.dedupInfo',
-          'Los clientes se agrupan por RUT: si el mismo RUT aparece en varias filas con distinto tipo o número de empresa, se guarda un solo cliente con todas sus empresas.'
+          'Los clientes se agrupan por RUT y Denominación: dos filas se juntan en un solo cliente solo cuando coinciden AMBOS valores. Si el mismo RUT aparece con distinta denominación (por ejemplo, un núcleo familiar que solo tiene RUT y una empresa), se guarda como clientes separados.'
         )}
       </Typography>
       <Box

@@ -169,7 +169,7 @@
       "title": "Cargar clientes desde Excel",
       "instructions": "El archivo debe tener una fila de encabezados con las siguientes columnas (el orden no importa):",
       "optionalColumns": "Columnas opcionales:",
-      "dedupInfo": "Los clientes se agrupan por RUT: si el mismo RUT aparece en varias filas con distinto tipo o número de empresa, se guarda un solo cliente con todas sus empresas. En Email y Celular puedes escribir varios valores separados por coma, punto y coma o barra (ej: a@x.cl; b@y.cl).",
+      "dedupInfo": "Los clientes se agrupan por RUT y Denominación: dos filas se juntan en un solo cliente solo cuando coinciden AMBOS valores. Si el mismo RUT aparece con distinta denominación (por ejemplo, un núcleo familiar que solo tiene RUT y una empresa), se guarda como clientes separados. Cada celda se toma como texto literal.",
       "upload": {
         "dragDrop": "Arrastre un archivo Excel aquí, o haga clic para seleccionar",
         "supportedFormats": "Formatos soportados: .xlsx (Excel)",
@@ -482,7 +482,26 @@
       "button": "Hacer backup",
       "creating": "Creando...",
       "success": "Backup creado:",
-      "error": "No se pudo crear el backup. Inténtalo de nuevo."
+      "error": "No se pudo crear el backup. Inténtalo de nuevo.",
+      "autoTitle": "Backup automático",
+      "autoDescription": "Configura un respaldo automático semanal. Se usa la misma carpeta de backups del servidor y no interrumpe el uso de la aplicación.",
+      "autoEnable": "Habilitar backup automático",
+      "autoWeekday": "Día de la semana",
+      "autoTime": "Hora",
+      "autoSave": "Guardar",
+      "autoSaving": "Guardando...",
+      "autoSaved": "Configuración del backup automático guardada.",
+      "autoError": "No se pudo guardar la configuración del backup automático.",
+      "autoPreview": "Se hará un backup automático cada {{weekday}} a las {{time}}.",
+      "weekdays": {
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes",
+        "saturday": "Sábado",
+        "sunday": "Domingo"
+      }
     },
     "export": {
       "title": "Exportar Datos",

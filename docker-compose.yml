@@ -19,6 +19,9 @@ services:
     environment:
       - PUID=${PUID:-1001}
       - PGID=${PGID:-1001}
+      # Backups (manual + automatic) keep landing inside the mounted ./data
+      # volume unless you point BACKUP_DIR somewhere else.
+      - BACKUP_DIR=${BACKUP_DIR:-/app/data/backups}
     volumes:
       - ${DATA_PATH:-./data}:/app/data
       - ${PHOTOS_PATH:-./photos}:/app/static/photos

@@ -124,6 +124,11 @@ func main() {
 	}
 	s.Every(cfg.CardDAVSyncIntervalHours).Hours().Do(contactSyncTask)
 	go contactSyncTask() // Run initially once on startup (rate-limited to prevent duplicates)
+	// Automatic backup: one fixed poller that reads the schedule from the DB on
+	// every tick (see services/auto_backup.go). It is disabled until an admin
+	// enables and saves a schedule from Configuración -> Backup automático.
+	autoBackup := services.NewAutoBackupScheduler(db, cfg, cfg.GetReminderLocation())
+	s.Every(services.PollInterval()).Do(autoBackup.Poll)
 	go s.StartBlocking()
 
 	r := gin.Default()

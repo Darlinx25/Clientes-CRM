@@ -98,6 +98,15 @@ export interface BackupResult {
 }
 
 /**
+ * Server-wide automatic backup schedule (admin only)
+ */
+export interface AutoBackupConfig {
+  enabled: boolean;
+  weekday: string; // "sunday".."saturday"
+  time: string;    // "HH:MM"
+}
+
+/**
  * Input for updating a user
  */
 export interface UserUpdateInput {

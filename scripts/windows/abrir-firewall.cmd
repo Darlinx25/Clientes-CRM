@@ -1,6 +1,7 @@
 @echo off
 rem Abre el puerto 7300 en el Firewall de Windows para que otras
 rem computadoras/telofonos de la red puedan entrar a Historial.
+rem Solo aplica al perfil Privado (redes de confianza: casa/trabajo).
 rem Ejecutar UNA sola vez con administrador:
 rem   clic derecho -> "Ejecutar como administrador"
 setlocal
@@ -13,7 +14,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-netsh advfirewall firewall add rule name="Historial 7300" dir=in action=allow protocol=TCP localport=7300
+netsh advfirewall firewall add rule name="Historial 7300" dir=in action=allow protocol=TCP localport=7300 profile=private
 
 if errorlevel 1 (
   echo.

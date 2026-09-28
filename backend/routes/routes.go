@@ -208,6 +208,8 @@ func RegisterRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, oidcPro
 				controllers.TriggerReminders(c, *cfg)
 			})
 			admin.POST("/backup", controllers.CreateBackup)
+			admin.GET("/auto-backup", controllers.GetAutoBackupSchedule)
+			admin.PUT("/auto-backup", middleware.ValidateJSONMiddleware(&models.AutoBackupInput{}), controllers.UpdateAutoBackupSchedule)
 		}
 	}
 

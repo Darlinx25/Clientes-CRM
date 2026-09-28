@@ -23,9 +23,9 @@ const (
 	excelColumnPersona     = "ContactPerson"
 	excelColumnEmail       = "Email"
 	excelColumnCelular     = "Phone"
-excelColumnRUT         = "Rut"
-excelColumnDocumento = "Documento"
-excelColumnNumEmpresa  = "CompanyNumber"
+	excelColumnRUT         = "Rut"
+	excelColumnDocumento   = "Documento"
+	excelColumnNumEmpresa  = "CompanyNumber"
 	excelColumnAniversario = "Anniversary"
 	excelColumnComentario  = "ContactInformation"
 	excelColumnAportacion  = "Aportacion"
@@ -79,12 +79,17 @@ type excelHeaders struct {
 //
 // Aniversario, Comentario and Aportación are optional extra columns: when present
 // in the header they are imported per client (aniversario/comentario) or per
-// company (aportación). Email and Celular may hold several values separated by
-// comma, semicolon or pipe; each becomes a separate email/phone entry.
+// company (aportación).
 //
-// Clients are deduplicated by RUT: multiple rows sharing the same RUT are merged into a
-// single client, a Número de Empresa per row is attached, and every Tipo de Empresa of
-// that row is linked to it.
+// Every column is treated as a literal string: nothing is parsed, converted or
+// split. A denomination like "Juan, perez" or a CI like "psp: 24445242" is kept
+// verbatim. Email and Celular are stored as they appear in the cell.
+//
+// Clients are deduplicated by RUT **and** Denominación: two rows only merge into a
+// single client when BOTH values match. A RUT can legitimately appear with different
+// denominations (e.g. a family unit that only carries the RUT vs. an actual company),
+// and those are kept as separate clients. Each row's Número de Empresa is attached
+// and every Tipo de Empresa of that row is linked to it.
 func ImportExcelContacts(c *gin.Context) {
 	log := logger.FromContext(c)
 
@@ -184,14 +189,15 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 		typeByName[strings.ToLower(strings.TrimSpace(t.Name))] = t
 	}
 
-	// Map normalized RUT -> accumulated client data
+	// Map dedup key (RUT|Denominación, or name:Denominación) -> accumulated data
 	type companyAccumulator struct {
 		tipos      map[string]bool
 		aportacion string
 	}
 	type clientAccumulator struct {
+		rut             string // normalized RUT of this client group ("" when the rows have no RUT)
 		cliente         string
-		documento     string
+		documento       string
 		personaContacto string
 		emails          []string
 		phones          []string
@@ -216,7 +222,13 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 			continue
 		}
 
-		key := normalizeRUT(parsed.rut)
+		// Dedup key: RUT + Denominación. Both must match for rows to merge, so a
+		// RUT shared by a company and by a family nucleus (different denominations)
+		// end up as two separate clients.
+		key := ""
+		if rut := normalizeRUT(parsed.rut); rut != "" {
+			key = rut + "|" + strings.ToLower(strings.TrimSpace(parsed.cliente))
+		}
 		if key == "" {
 			// No RUT: dedup by client name (case-insensitive)
 			key = "name:" + strings.ToLower(strings.TrimSpace(parsed.cliente))
@@ -227,6 +239,9 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 			acc = &clientAccumulator{companies: make(map[string]*companyAccumulator)}
 			clients[key] = acc
 			order = append(order, key)
+		}
+		if rut := normalizeRUT(parsed.rut); rut != "" {
+			acc.rut = rut
 		}
 
 		if acc.cliente == "" {
@@ -239,10 +254,10 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 			acc.documento = parsed.documento
 		}
 		if parsed.email != "" {
-			acc.emails = appendUnique(acc.emails, splitMultiValues(parsed.email))
+			acc.emails = appendUnique(acc.emails, []string{parsed.email})
 		}
 		if parsed.celular != "" {
-			acc.phones = appendUnique(acc.phones, splitMultiValues(parsed.celular))
+			acc.phones = appendUnique(acc.phones, []string{parsed.celular})
 		}
 		if n := normalizeExcelDate(parsed.aniversario); n != "" && acc.aniversario == "" {
 			acc.aniversario = n
@@ -269,15 +284,16 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 	err = db.Transaction(func(tx *gorm.DB) error {
 		for _, key := range order {
 			acc := clients[key]
-			normRUT := ""
-			if !strings.HasPrefix(key, "name:") {
-				normRUT = key
-			}
+			normRUT := acc.rut
 
 			var contact models.Contact
 			query := tx
+			nameLike := strings.ToLower(strings.TrimSpace(acc.cliente))
 			if normRUT != "" {
-				if err := query.Where("rut = ?", normRUT).First(&contact).Error; err != nil {
+				// Existing clients only match when the RUT AND the denomination agree,
+				// mirroring the grouping key: same RUT part of a family nucleus must
+				// not swallow an actual company with a different name.
+				if err := query.Where("rut = ? AND LOWER(firstname) = ?", normRUT, nameLike).First(&contact).Error; err != nil {
 					if err != gorm.ErrRecordNotFound {
 						return err
 					}
@@ -287,7 +303,6 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 			isNew := contact.ID == 0
 			if isNew && normRUT == "" {
 				// Match existing contact by same name when no RUT is present
-				nameLike := strings.ToLower(strings.TrimSpace(acc.cliente))
 				var byName models.Contact
 				if err := tx.Where("LOWER(firstname) = ?", nameLike).First(&byName).Error; err == nil {
 					contact = byName
@@ -300,7 +315,7 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 					UserID:             userID,
 					Firstname:          acc.cliente,
 					Rut:                normRUT,
-					Documento:           acc.documento,
+					Documento:          acc.documento,
 					ContactPerson:      acc.personaContacto,
 					Anniversary:        acc.aniversario,
 					ContactInformation: acc.comentario,
@@ -467,10 +482,10 @@ func parseExcelHeaders(headerRow []string) (*excelHeaders, error) {
 		"teléfono":            excelColumnCelular,
 		"cel":                 excelColumnCelular,
 		"rut":                 excelColumnRUT,
-		"documento":          excelColumnDocumento,
-		"ci":                 excelColumnDocumento,
-		"cédula":             excelColumnDocumento,
-		"cedula":             excelColumnDocumento,
+		"documento":           excelColumnDocumento,
+		"ci":                  excelColumnDocumento,
+		"cédula":              excelColumnDocumento,
+		"cedula":              excelColumnDocumento,
 		"cedula de identidad": excelColumnDocumento,
 		"numero de empresa":   excelColumnNumEmpresa,
 		"número de empresa":   excelColumnNumEmpresa,
@@ -601,26 +616,6 @@ func normalizeRUT(rut string) string {
 	}
 	re := regexp.MustCompile(`[^0-9kK]`)
 	return re.ReplaceAllString(rut, "")
-}
-
-// splitMultiValues splits a cell holding several values ("a@x.cl; b@y.cl")
-// into trimmed, de-duplicated pieces. White space, comma, semicolon and pipe
-// are accepted as separators so pasted lists keep working.
-func splitMultiValues(s string) []string {
-	parts := strings.FieldsFunc(s, func(r rune) bool {
-		return r == ';' || r == '|' || r == ',' || r == '\n' || r == '\r'
-	})
-	out := make([]string, 0, len(parts))
-	seen := make(map[string]bool, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" || seen[p] {
-			continue
-		}
-		seen[p] = true
-		out = append(out, p)
-	}
-	return out
 }
 
 // appendUnique appends vals to dst, keeping existing entries (order preserved).

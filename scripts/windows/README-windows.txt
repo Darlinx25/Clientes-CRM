@@ -30,6 +30,10 @@
 3) ACCESO DESDE OTRAS COMPUTADORAS / TELEFONOS DE LA RED
    - Clic derecho sobre abrir-firewall.cmd -> "Ejecutar como
      administrador" (habilita el puerto 7300).
+   - La regla se crea para el perfil Privado: la red donde estan la PC
+     y los telefonos debe estar marcada como privada en Windows (si la
+     conecto como "Publica", deshabilite y vueleve a conectar
+     eligiendo "Privada").
    - Averigue la IP de esta PC con "ipconfig" (IPv4).
    - Desde las otras computadoras entre a:
        http://IP-de-esta-pc:7300
@@ -40,6 +44,10 @@
      Genera en C:\Historial\backups\ un archivo
        historial-FECHA.zip (base de datos + fotos)
      Se puede hacer con la app corriendo; es consistente.
+   - Backup AUTOMATICO: en Configuracion -> "Backup automático" elija
+     el dia y la hora (por ejemplo viernes 18:00) y active el
+     interruptor. Cada semana se crea el backup solo, en la misma
+     carpeta backups\.
    - Alternativa por consola: doble clic en hacer-backup.cmd
    - IMPORTANTE: copie el .zip a OTRA maquina/USB/OneDrive. Un backup
      guardado solo en el mismo disco no lo protege de un fallo del disco.

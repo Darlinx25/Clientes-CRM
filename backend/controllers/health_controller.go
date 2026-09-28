@@ -43,7 +43,7 @@ func HealthCheck(c *gin.Context) {
 		Status:    status,
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Database:  dbHealth,
-		Version:   "0.1.0",
+		Version:   "0.2.0",
 	}
 
 	c.JSON(httpStatus, response)

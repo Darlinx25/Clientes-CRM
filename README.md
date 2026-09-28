@@ -12,7 +12,7 @@ Basado en [Meerkat CRM](https://github.com/fbuchner/meerkat-crm) simplificado.
 ## Uso en Windows (la app es un solo `.exe`)
 
 ### Qué descargás y adónde va
-- El paquete listo para llevar es `dist/historial-windows-v0.1.0.zip` (se genera
+- El paquete listo para llevar es `dist/historial-windows-v0.2.0.zip` (se genera
   con `scripts/build-windows-exe.sh`). Viene la versión y el hash del `.exe`
   adentro, para revisar el archivo.
 - Lo copiás a la PC de Windows, clic derecho → **"Extraer todo"** y adentro hay
@@ -66,6 +66,9 @@ Esto le pasa a TODA aplicación casera, no es un problema específico de esta.
   notás porque ahí el firewall local no bloquea; Windows lo trae activo).
 - Clic derecho sobre `abrir-firewall.cmd` → **"Ejecutar como administrador"**
   (habilita el puerto 7300).
+- La regla se crea para el **perfil Privado**: la red donde están la PC y los
+  teléfonos debe estar marcada como privada en Windows (si la conectaste y
+  elegiste "Pública", deshabilitala y volvé a conectarla eligiendo "Privada").
 - Averiguá la IP de la PC servidor con `ipconfig` (IPv4, ej. 192.168.x.x).
 - Desde las demás computadoras entrás a `http://192.168.x.x:7300`.
 - Si solo vas a usar la app en la misma PC, este paso no hace falta.
@@ -74,6 +77,9 @@ Esto le pasa a TODA aplicación casera, no es un problema específico de esta.
 - Entrá como admin a la web → **Configuración → "Hacer backup"**. Crea en
   `C:\Historial\backups\` un archivo `historial-FECHA.zip` con la base y las
   fotos, con la app corriendo (es consistente).
+- **Backup automático:** en Configuración → **"Backup automático"** elegí el
+  día (ej. viernes) y la hora (ej. 18:00) y activá el interruptor. La app crea
+  el backup sola cada semana en la misma carpeta `backups\`.
 - Copiá ese `.zip` a OTRO disco/USB. Un backup en el mismo disco no protege
   contra un disco dañado.
 - Alternativa desde la máquina: doble clic en `hacer-backup.cmd`.

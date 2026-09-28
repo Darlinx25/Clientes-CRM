@@ -92,6 +92,9 @@ RUN chmod +x /app/entrypoint.sh
 ENV PORT=8081
 ENV SQLITE_DB_PATH=/app/data/meerkat.db
 ENV PROFILE_PHOTO_DIR=/app/static/photos
+# Manual and automatic backups land on the mounted data volume, so they are
+# not lost when the container is recreated. Overridable via compose (.env).
+ENV BACKUP_DIR=/app/data/backups
 ENV GIN_MODE=release
 
 # nginx listens on 8080 (no root needed to bind)
