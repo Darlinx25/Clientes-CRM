@@ -9,69 +9,37 @@ Basado en [Meerkat CRM](https://github.com/fbuchner/meerkat-crm) simplificado.
 > La app para Windows viene como **un solo archivo**: `historial.exe`. No se
 > instala nada: es un programa que corre solo y sirve la página web.
 
-## Uso en Windows (la app es un solo `.exe`)
+## Uso en Windows la app es un `.exe`
 
 ### Qué descargás y adónde va
 - El paquete listo para llevar es `dist/historial-windows-v0.2.0.zip` (se genera
   con `scripts/build-windows-exe.sh`). Viene la versión y el hash del `.exe`
   adentro, para revisar el archivo.
-- Lo copiás a la PC de Windows, clic derecho → **"Extraer todo"** y adentro hay
-  una carpeta `Historial\` con `historial.exe` y los `.cmd`
+- Dentro hay una carpeta `Historial\` con `historial.exe` y los `.cmd`
   (`instalar-autoarranque`, `abrir-firewall`, `hacer-backup`, `iniciar`,
   `desinstalar-autoarranque`).
-- **Importante:** la carpeta va en disco local. NO la pongas en OneDrive/
-  Dropbox/unidad de red: la base no debe vivir en carpetas sincronizadas.
 
 ### Primer arranque
-1. Doble clic en `historial.exe` (se abre una ventana oscura: es la app
-   corriendo, no la cierres).
+1. Doble clic en `historial.exe`
 2. Windows puede mostrar "Windows protegió su equipo" (el archivo no está
    firmado): **"Más información" → "Ejecutar de todas formas"**.
 3. En esa misma PC abrí el navegador y entrá a `http://localhost:7300`.
-4. Login inicial: **admin / admin**. Cambiá esa contraseña cuanto antes
-   (Configuración → Cambiar Contraseña).
+4. Login inicial: **admin / admin**
 
-### Si Windows lo bloquea (SmartScreen / antivirus)
-Lo primero que vas a ver es la advertencia de **SmartScreen** ("Windows
-protegió su equipo"). Es normal: la app **no está firmada digitalmente** (eso
-requiere un certificado pago, caro), así que Windows no puede decir "de confianza".
-Esto le pasa a TODA aplicación casera, no es un problema específico de esta.
-
-- La advertencia de "editor desconocido" **no desaparece** sin el certificado
-  de firma (cuesta dinero por año). Con "Más información → Ejecutar de todas
-  formas" se salta UNA vez por PC; a la segunda ya no pregunta.
-- Si el aviso aparece al **extraer el zip**: el navegador marca el zip como
-  "descargado de internet". Clic derecho sobre el zip → **"Desbloquear"**
-  (si la opción existe) **antes** de extraerlo, y quedará sin advertencia.
-- El archivo trae su **hash** (`historial.exe.sha256`): podés verificarlo con
-  `certutil -hashfile historial.exe SHA256` y comparar, para confirmar que lo
-  que instalás es exactamente lo que se generó acá.
-- Si algún antivirus (Defender u otro) lo pusiera en cuarentena: es un falso
-  positivo de un ejecutable nuevo sin firma. Podés reportarlo a Microsoft en
-  https://www.microsoft.com/wdsi/filesubmission para que lo revisen y dejen de
-  marcarlo.
-
-### Que arranque sola al encender la PC (servidor sin nadie que la toque)
+### Que arranque sola al encender la PC 
 - Clic derecho sobre `instalar-autoarranque.cmd` → **"Ejecutar como
   administrador"**. Pide una vez la contraseña de Windows de esa PC y crea una
   tarea "al iniciar el equipo" que corre `historial.exe` aunque **nadie inicie
   sesión**.
-- Ojo: un acceso directo en `shell:startup` **NO sirve para este caso** (eso
-  arranca solo cuando un usuario inicia sesión). Buenísimo si la PC siempre
-  queda con alguien logueado; inútil en un servidor headless.
 - Para quitarlo: `desinstalar-autoarranque.cmd`.
 
-### Acceso desde otras computadoras / teléfonos de la red (firewall)
-- En Windows hace falta abrir el firewall **una sola vez** (en Linux no lo
-  notás porque ahí el firewall local no bloquea; Windows lo trae activo).
+### Acceso desde otras computadoras de la red (firewall)
+- En Windows hace falta abrir el firewall **una sola vez**
 - Clic derecho sobre `abrir-firewall.cmd` → **"Ejecutar como administrador"**
   (habilita el puerto 7300).
 - La regla se crea para el **perfil Privado**: la red donde están la PC y los
   teléfonos debe estar marcada como privada en Windows (si la conectaste y
   elegiste "Pública", deshabilitala y volvé a conectarla eligiendo "Privada").
-- Averiguá la IP de la PC servidor con `ipconfig` (IPv4, ej. 192.168.x.x).
-- Desde las demás computadoras entrás a `http://192.168.x.x:7300`.
-- Si solo vas a usar la app en la misma PC, este paso no hace falta.
 
 ### Backups (copia de seguridad)
 - Entrá como admin a la web → **Configuración → "Hacer backup"**. Crea en
@@ -80,8 +48,6 @@ Esto le pasa a TODA aplicación casera, no es un problema específico de esta.
 - **Backup automático:** en Configuración → **"Backup automático"** elegí el
   día (ej. viernes) y la hora (ej. 18:00) y activá el interruptor. La app crea
   el backup sola cada semana en la misma carpeta `backups\`.
-- Copiá ese `.zip` a OTRO disco/USB. Un backup en el mismo disco no protege
-  contra un disco dañado.
 - Alternativa desde la máquina: doble clic en `hacer-backup.cmd`.
 
 ### Actualizar la app
