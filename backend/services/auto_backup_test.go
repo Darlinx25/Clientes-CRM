@@ -71,6 +71,56 @@ func TestScheduleLocation(t *testing.T) {
 	assert.Same(t, scheduler.loc, scheduler.scheduleLocation(AutoBackupConfig{Timezone: "not/a/zone"}))
 }
 
+func TestSaveAutoBackupConfigNormalizesTime(t *testing.T) {
+	db := setupAutoBackupDB(t)
+
+	// 24h, 24h single-digit hour, 12h lowercase/uppercase with and without
+	// spaces must all normalize to the canonical 24h "HH:MM".
+	for in, want := range map[string]string{
+		"18:00":    "18:00",
+		"9:05":     "09:05",
+		"6:00":     "06:00",
+		"06:00PM":  "18:00",
+		"06:00 PM": "18:00",
+		"6:00pm":   "18:00",
+		"12:30am":  "00:30",
+		"12:30pm":  "12:30",
+		"07:45 am": "07:45",
+	} {
+		err := SaveAutoBackupConfig(db, AutoBackupConfig{Enabled: true, Weekday: "friday", Time: in})
+		require.NoError(t, err, "time=%q", in)
+
+		cfg, err := GetAutoBackupConfig(db)
+		require.NoError(t, err)
+		assert.Equal(t, want, cfg.Time, "time=%q", in)
+	}
+}
+
+func TestNormalizeTime24(t *testing.T) {
+	for raw, want := range map[string]string{
+		"00:00":    "00:00",
+		"18:00":    "18:00",
+		"9:30":     "09:30",
+		" 8:00 ":   "08:00",
+		"06:00PM":  "18:00",
+		"06:00 PM": "18:00",
+		"6:00 pm":  "18:00",
+		"11:59 PM": "23:59",
+		"12:00 AM": "00:00",
+		"12:00 PM": "12:00",
+	} {
+		got, err := normalizeTime24(raw)
+		require.NoError(t, err, "raw=%q", raw)
+		assert.Equal(t, want, got, "raw=%q", raw)
+	}
+
+	for _, bad := range []string{"", "24:00", "25:00", "18:60", "18-00", "6:", "noon"} {
+		got, err := normalizeTime24(bad)
+		assert.Error(t, err, "bad=%q", bad)
+		assert.Empty(t, got)
+	}
+}
+
 func TestSaveAutoBackupConfigInvalidInput(t *testing.T) {
 	db := setupAutoBackupDB(t)
 

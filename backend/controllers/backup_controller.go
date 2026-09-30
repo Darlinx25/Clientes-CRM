@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	apperrors "meerkat/errors"
@@ -65,7 +66,12 @@ func UpdateAutoBackupSchedule(c *gin.Context) {
 		Timezone: input.Timezone,
 	}
 	if err := services.SaveAutoBackupConfig(db, schedule); err != nil {
-		apperrors.AbortWithError(c, apperrors.ErrInvalidInput("time", err.Error()))
+		var verr *services.ConfigValidationError
+		if errors.As(err, &verr) {
+			apperrors.AbortWithError(c, apperrors.ErrInvalidInput(verr.Field, verr.Err.Error()))
+			return
+		}
+		apperrors.AbortWithError(c, apperrors.ErrDatabase("Failed to save automatic backup settings").WithError(err))
 		return
 	}
 

@@ -31,6 +31,7 @@ import {
   updateAutoBackupConfig,
 } from './api/admin';
 import { isAdmin } from './auth';
+import { normalizeTime24 } from './utils';
 import { ThemePreference, useThemePreference } from './AppThemeProvider';
 import UserManagementSection from './components/UserManagementSection';
 
@@ -327,7 +328,7 @@ export default function SettingsPage() {
                 label={t('settings.backup.autoTime')}
                 type="time"
                 value={autoTime}
-                onChange={event => setAutoTime(event.target.value)}
+                onChange={event => setAutoTime(normalizeTime24(event.target.value))}
                 size="small"
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ step: 300 }}

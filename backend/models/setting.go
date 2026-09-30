@@ -12,11 +12,12 @@ func (AppSetting) TableName() string { return "app_settings" }
 
 // AutoBackupInput is the DTO for updating the automatic backup schedule from
 // the admin settings. Weekday is a day name ("monday".."sunday") and Time is a
-// 24h "HH:MM" clock; both are validated in services.SaveAutoBackupConfig so the
-// user gets a friendly message instead of a schema error.
+// 24h "HH:MM" or 12h "h:mm AM/PM" clock (normalized to HH:MM in the service);
+// both are validated in services.SaveAutoBackupConfig so the user gets a
+// friendly message instead of a schema error.
 type AutoBackupInput struct {
 	Enabled  bool   `json:"enabled"`
 	Weekday  string `json:"weekday" validate:"required,min=3,max=9"`
-	Time     string `json:"time" validate:"required,min=5,max=5"`
+	Time     string `json:"time" validate:"required,max=8"`
 	Timezone string `json:"timezone"`
 }

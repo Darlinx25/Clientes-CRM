@@ -7,6 +7,7 @@ import (
 	"meerkat/logger"
 	"meerkat/models"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,13 +20,13 @@ import (
 // every tick, so admin changes apply on the next tick without ever mutating a
 // running gocron scheduler (which is not thread-safe).
 const (
-	backupSettingEnabled   = "auto_backup_enabled"
-	backupSettingWeekday   = "auto_backup_weekday"
-	backupSettingTime      = "auto_backup_time"
-	backupSettingTimezone  = "auto_backup_timezone"
-	defaultBackupWeekday   = "friday"
-	defaultBackupTime      = "18:00"
-	backupPollInterval     = 30 * time.Second
+	backupSettingEnabled  = "auto_backup_enabled"
+	backupSettingWeekday  = "auto_backup_weekday"
+	backupSettingTime     = "auto_backup_time"
+	backupSettingTimezone = "auto_backup_timezone"
+	defaultBackupWeekday  = "friday"
+	defaultBackupTime     = "18:00"
+	backupPollInterval    = 30 * time.Second
 )
 
 // validWeekdays maps the accepted weekday names to true. Weekday is stored in
@@ -35,7 +36,54 @@ var validWeekdays = map[string]bool{
 	"thursday": true, "friday": true, "saturday": true,
 }
 
+// backupTimeRe matches the canonical 24h "HH:MM" form that normalizeTime24
+// always produces and that is stored in the database.
 var backupTimeRe = regexp.MustCompile(`^([01][0-9]|2[0-3]):[0-5][0-9]$`)
+
+// Locale-tolerant time patterns. <input type="time"> renders in the user's
+// locale, so an en-US client may send "06:00 PM" (12h) or "6:00" (no leading
+// zero) instead of the canonical "18:00".
+var (
+	time24hRe = regexp.MustCompile(`^([01]?[0-9]|2[0-3]):([0-5][0-9])$`)
+	time12hRe = regexp.MustCompile(`^(0?[1-9]|1[0-2]):([0-5][0-9])(am|pm)$`)
+)
+
+// normalizeTime24 parses a backup schedule time in 24h ("HH:MM" or "H:MM") or
+// 12h ("h:mm AM/PM", case-insensitive) form and returns it canonically as 24h
+// "HH:MM".
+func normalizeTime24(raw string) (string, error) {
+	compact := strings.ReplaceAll(strings.TrimSpace(raw), " ", "")
+	if m := time24hRe.FindStringSubmatch(compact); m != nil {
+		hour, _ := strconv.Atoi(m[1])
+		return fmt.Sprintf("%02d:%s", hour, m[2]), nil
+	}
+	if m := time12hRe.FindStringSubmatch(strings.ToLower(compact)); m != nil {
+		hour, _ := strconv.Atoi(m[1])
+		switch m[3] {
+		case "pm":
+			if hour != 12 {
+				hour += 12
+			}
+		case "am":
+			if hour == 12 {
+				hour = 0
+			}
+		}
+		return fmt.Sprintf("%02d:%s", hour, m[2]), nil
+	}
+	return "", fmt.Errorf("la hora no es válida: %q (use el formato 24h HH:MM o 12h h:mm AM/PM, ej. 18:00 o 06:00 PM)", raw)
+}
+
+// ConfigValidationError names the offending field of an invalid automatic
+// backup schedule, so the API can report "weekday"/"time"/"timezone" instead of
+// always blaming "time".
+type ConfigValidationError struct {
+	Field string
+	Err   error
+}
+
+func (e *ConfigValidationError) Error() string { return e.Err.Error() }
+func (e *ConfigValidationError) Unwrap() error { return e.Err }
 
 // AutoBackupConfig is the server-wide automatic backup schedule.
 // Timezone is an optional IANA name (e.g. "America/Santiago"); when empty the
@@ -51,16 +99,22 @@ type AutoBackupConfig struct {
 func SaveAutoBackupConfig(db *gorm.DB, in AutoBackupConfig) error {
 	weekday := strings.ToLower(strings.TrimSpace(in.Weekday))
 	if !validWeekdays[weekday] {
-		return fmt.Errorf("el día no es válido: %q (use lunes..domingo en inglés: monday..sunday)", in.Weekday)
+		return &ConfigValidationError{
+			Field: "weekday",
+			Err:   fmt.Errorf("el día no es válido: %q (use lunes..domingo en inglés: monday..sunday)", in.Weekday),
+		}
 	}
-	timeVal := strings.TrimSpace(in.Time)
-	if !backupTimeRe.MatchString(timeVal) {
-		return fmt.Errorf("la hora no es válida: %q (use el formato HH:MM, ej. 18:00)", in.Time)
+	timeVal, err := normalizeTime24(in.Time)
+	if err != nil {
+		return &ConfigValidationError{Field: "time", Err: err}
 	}
 	timezone := strings.TrimSpace(in.Timezone)
 	if timezone != "" {
 		if _, err := time.LoadLocation(timezone); err != nil {
-			return fmt.Errorf("la zona horaria no es válida: %q (use un nombre IANA, ej. America/Santiago o UTC)", in.Timezone)
+			return &ConfigValidationError{
+				Field: "timezone",
+				Err:   fmt.Errorf("la zona horaria no es válida: %q (use un nombre IANA, ej. America/Santiago o UTC)", in.Timezone),
+			}
 		}
 	}
 
@@ -100,8 +154,8 @@ func GetAutoBackupConfig(db *gorm.DB) (AutoBackupConfig, error) {
 				cfg.Weekday = strings.ToLower(row.Value)
 			}
 		case backupSettingTime:
-			if backupTimeRe.MatchString(row.Value) {
-				cfg.Time = row.Value
+			if norm, err := normalizeTime24(row.Value); err == nil {
+				cfg.Time = norm
 			}
 		case backupSettingTimezone:
 			if _, err := time.LoadLocation(strings.TrimSpace(row.Value)); err == nil {
