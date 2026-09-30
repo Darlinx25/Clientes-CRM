@@ -103,3 +103,33 @@ func TestCompactTerm(t *testing.T) {
 		assert.Equal(t, want, compactTerm(raw), "raw=%q", raw)
 	}
 }
+
+func TestSplitExcelTypeCell(t *testing.T) {
+	for cell, want := range map[string][]string{
+		"IyC,Rural":     {"IyC", "Rural"},
+		"IyC, Rural":    {"IyC", "Rural"},
+		" IyC ,,Rural ": {"IyC", "Rural"},
+		"IyC":           {"IyC"},
+		"":              nil,
+		", ,,":          nil,
+	} {
+		assert.Equal(t, want, splitExcelTypeCell(cell), "cell=%q", cell)
+	}
+}
+
+func TestResolveTypeStringsCommaSeparatedCell(t *testing.T) {
+	lookup := foldTypeLookup(
+		companyTypeByName("Administración"),
+		companyTypeByName("IyC"),
+		companyTypeByName("Rural"),
+	)
+
+	// One cell holding several types (with an unaccented + an unknown token).
+	list := resolveTypeStrings(lookup, []string{"Administracion, IyC,Rural", "NoExiste"})
+	require.Len(t, list, 3)
+	names := make([]string, 0, len(list))
+	for _, ct := range list {
+		names = append(names, ct.Name)
+	}
+	assert.ElementsMatch(t, []string{"Administración", "IyC", "Rural"}, names)
+}

@@ -273,7 +273,10 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 				acc.companies[parsed.numeroEmpresa] = ca
 			}
 			if parsed.tipoEmpresa != "" {
-				ca.tipos[parsed.tipoEmpresa] = true
+				// A cell may hold several types separated by commas (e.g. "IyC,Rural").
+				for _, tok := range splitExcelTypeCell(parsed.tipoEmpresa) {
+					ca.tipos[tok] = true
+				}
 			}
 			if parsed.aportacion != "" && ca.aportacion == "" {
 				ca.aportacion = trimMax(parsed.aportacion, 100)
@@ -431,6 +434,19 @@ func processExcelImport(db *gorm.DB, userID uint, path string) (*ExcelImportResu
 	return result, nil
 }
 
+// splitExcelTypeCell splits a "tipo de empresa" cell into individual type
+// names: a cell may hold several types separated by commas ("IyC,Rural").
+// Surrounding spaces are trimmed and empty tokens dropped.
+func splitExcelTypeCell(cell string) []string {
+	var out []string
+	for _, tok := range strings.Split(cell, ",") {
+		if tok = strings.TrimSpace(tok); tok != "" {
+			out = append(out, tok)
+		}
+	}
+	return out
+}
+
 // importCompanyTypeAliases maps abbreviations commonly used in spreadsheets (and
 // their compact form: lowercase, accents folded, punctuation stripped) to the
 // canonical company type name stored in the app. This lets a sheet that writes
@@ -449,23 +465,31 @@ var importCompanyTypeAliases = map[string]string{
 // failing that, against the spreadsheet abbreviations in importCompanyTypeAliases.
 // The result is deduplicated by type ID.
 func resolveTypeEntities(typeByName map[string]models.CompanyType, tipoByRaw map[string]bool) []models.CompanyType {
-	var tipos []string
+	tipos := make([]string, 0, len(tipoByRaw))
 	for raw := range tipoByRaw {
 		tipos = append(tipos, raw)
 	}
 	return resolveTypeStrings(typeByName, tipos)
 }
 
-// resolveTypeStrings resolves a list of raw type strings (folded name first,
-// alias second) to unique CompanyType rows.
+// resolveTypeStrings resolves a list of raw type strings to unique CompanyType
+// rows. Each raw cell may hold several types separated by commas (e.g.
+// "IyC,Rural"); every token is resolved by folded name first and, failing that,
+// by the compact abbreviation table. The result is deduplicated by type ID.
 func resolveTypeStrings(typeByName map[string]models.CompanyType, rawTipos []string) []models.CompanyType {
 	list := make([]models.CompanyType, 0, len(rawTipos))
 	seen := make(map[uint]bool, len(rawTipos))
 	for _, raw := range rawTipos {
-		t, ok := matchCompanyType(typeByName, raw)
-		if ok && !seen[t.ID] {
-			seen[t.ID] = true
-			list = append(list, t)
+		for _, tok := range strings.Split(raw, ",") {
+			tok = strings.TrimSpace(tok)
+			if tok == "" {
+				continue
+			}
+			t, ok := matchCompanyType(typeByName, tok)
+			if ok && !seen[t.ID] {
+				seen[t.ID] = true
+				list = append(list, t)
+			}
 		}
 	}
 	return list

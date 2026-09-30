@@ -10,7 +10,7 @@
 #
 # Output:
 #   dist/historial.exe                (Windows 64-bit, the file to copy/share)
-#   dist/historial-windows-v0.2.0.zip (release zip: Historial/ + scripts + README + sha256)
+#   dist/historial-windows-v0.4.0.zip (release zip: Historial/ + scripts + README + sha256)
 #   dist/historial-linux              (Linux binary to verify locally)
 #
 # Usage:
@@ -24,7 +24,7 @@ BACKEND="$ROOT/backend"
 WEBDIR="$BACKEND/web/dist"
 OUT="$ROOT/dist"
 
-VERSION="0.2.0"
+VERSION="0.4.0"
 ZIP="$OUT/historial-windows-v$VERSION.zip"
 
 # 1) Build the React app with a relative API base so it talks to the same
