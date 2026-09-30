@@ -19,6 +19,12 @@ import (
 	"strings"
 	"syscall"
 
+	// Embed the full IANA tzdata into the binary so time.LoadLocation works on
+	// every OS (Windows has no zoneinfo files). Without this, an IANA name like
+	// "America/Montevideo" is rejected by the backup timezone validation, and by
+	// any other timezone feature, on Windows standalone builds.
+	_ "time/tzdata"
+
 	"time"
 
 	"github.com/gin-contrib/cors"

@@ -12,7 +12,7 @@ Basado en [Meerkat CRM](https://github.com/fbuchner/meerkat-crm) simplificado.
 ## Uso en Windows la app es un `.exe`
 
 ### Qué descargás y adónde va
-- El paquete listo para llevar es `dist/historial-windows-v0.4.0.zip` (se genera
+- El paquete listo para llevar es `dist/historial-windows-v0.5.0.zip` (se genera
   con `scripts/build-windows-exe.sh`). Viene la versión y el hash del `.exe`
   adentro, para revisar el archivo.
 - Dentro hay una carpeta `Historial\` con `historial.exe` y los `.cmd`
