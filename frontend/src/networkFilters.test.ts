@@ -34,7 +34,7 @@ describe('resolveNetworkFilters', () => {
 
   test('does not share state between calls', () => {
     const first = resolveNetworkFilters(null);
-    first.showActivities = true;
-    expect(resolveNetworkFilters(null).showActivities).toBe(false);
+    first.showActivities = false;
+    expect(resolveNetworkFilters(null).showActivities).toBe(true);
   });
 });

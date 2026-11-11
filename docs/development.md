@@ -12,4 +12,6 @@ Meerkat CRM is a two-service application: a Go REST API and a React SPA. Both ru
 - [Backend](development/backend.md) — setup, conventions, adding endpoints, migrations
 - [Frontend](development/frontend.md) — setup, conventions, hooks, translations
 - [Testing](development/testing.md) — unit, integration, and E2E tests
+- [Upgrades](upgrades.md) — database upgrade contract, snapshots and fixtures
+- [Agent Workflow](agent-workflow.md) — OpenCode config, skills, commands and subagents
 - [Contributing](development/contributing.md) — workflow, code style, pull requests

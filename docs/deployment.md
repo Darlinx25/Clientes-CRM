@@ -74,7 +74,10 @@ docker compose pull
 docker compose up -d
 ```
 
-Database migrations run automatically on startup.
+Database migrations run automatically on startup. Before changing an existing
+database, the backend writes a recovery snapshot (`pre-upgrade-*.db`) to
+`BACKUP_DIR`. If the schema is dirty, startup stops instead of forcing it. See
+[Upgrades](upgrades.md).
 
 ## Backups
 

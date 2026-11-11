@@ -11,6 +11,7 @@ import (
 	"meerkat/middleware"
 	"meerkat/routes"
 	"meerkat/services"
+	"meerkat/version"
 	"meerkat/web"
 	"net"
 	"net/http"
@@ -58,7 +59,7 @@ func main() {
 		Pretty: prettyLog,
 	})
 
-	logger.Info().Msg("Loading server...")
+	logger.Info().Str("version", version.Version).Msg("Loading server...")
 
 	logger.Info().Msg("Loading configuration...")
 	cfg := config.LoadConfig()
@@ -84,9 +85,16 @@ func main() {
 	}
 
 	logger.Info().Msg("Loading database and running migrations...")
-	db, err := database.InitDB(cfg.DBPath)
+	db, err := database.InitDB(cfg.DBPath, cfg.BackupDir)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to initialize database")
+	}
+	if info, err := database.GetSchemaInfo(db); err == nil {
+		logger.Info().
+			Int("schema_version", info.Current).
+			Uint("expected_schema_version", info.Expected).
+			Bool("up_to_date", info.UpToDate).
+			Msg("Database schema ready")
 	}
 
 	logger.Info().Msg("Seeding admin user and unifying data...")

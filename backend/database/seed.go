@@ -22,9 +22,10 @@ var contentTables = []string{
 	"reminder_completions",
 }
 
-// SeedAdminUser ensures the built-in "admin" account exists with the admin/admin
-// credentials and admin role. If the username already exists it is promoted to
-// admin and its password is reset to "admin" so the documented login always works.
+// SeedAdminUser ensures the built-in "admin" account exists with the
+// admin/admin credentials on first install. On later starts it only promotes an
+// existing "admin" username to the admin role; it never resets the password, so
+// updating a running instance does not undo the password the user already set.
 func SeedAdminUser(db *gorm.DB) error {
 	var admin models.User
 	err := db.Where("username = ?", services.AdminUsername).First(&admin).Error
@@ -46,13 +47,10 @@ func SeedAdminUser(db *gorm.DB) error {
 		return err
 	}
 
-	hashed, hashErr := services.HashPassword("admin")
-	if hashErr != nil {
-		return hashErr
+	if !admin.IsAdmin {
+		return db.Model(&admin).Update("is_admin", true).Error
 	}
-	admin.Password = hashed
-	admin.IsAdmin = true
-	return db.Save(&admin).Error
+	return nil
 }
 
 // ReassignContentToAdmin moves every content row to the shared admin account so

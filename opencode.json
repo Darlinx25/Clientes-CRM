@@ -1,0 +1,51 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md",
+    "backend/AGENTS.md",
+    "frontend/AGENTS.md",
+    "docs/upgrades.md",
+    "docs/agent-workflow.md"
+  ],
+  "skills": {
+    "paths": [".opencode/skills"]
+  },
+  "permission": {
+    "edit": {
+      "*": "allow",
+      "**/.env": "deny",
+      "**/.env.local": "deny",
+      "**/.env.*.local": "deny",
+      "data/**": "deny",
+      "photos/**": "deny",
+      "**/*.db": "deny",
+      "**/*.db-shm": "deny",
+      "**/*.db-wal": "deny",
+      "backend/database/migrations/*": "ask",
+      "backend/database/migrations.lock": "ask",
+      "backend/database/testdata/fixtures/*": "ask",
+      "VERSION": "ask",
+      "backend/winres/winres.json": "ask",
+      ".github/workflows/*": "ask",
+      "**/.env.example": "allow"
+    },
+    "bash": {
+      "*": "allow",
+      "rm -rf *": "ask",
+      "git commit*": "ask",
+      "git push*": "ask",
+      "git tag*": "ask",
+      "git reset --hard*": "deny",
+      "git clean*": "deny"
+    },
+    "external_directory": {
+      "*": "allow",
+      "/home/faxcundo/Documents/Clientes-CRM/data/**": "deny",
+      "/home/faxcundo/Documents/Clientes-CRM/photos/**": "deny"
+    },
+    "webfetch": "allow",
+    "websearch": "allow",
+    "skill": "allow",
+    "task": "allow"
+  }
+}

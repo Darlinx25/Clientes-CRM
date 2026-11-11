@@ -17,15 +17,41 @@ go test ./...
 
 ### Test Database
 
-Tests use an in-memory SQLite database that is auto-migrated before each test. No external dependencies required.
+Most tests use an in-memory SQLite database and GORM `AutoMigrate`. Tests that
+exercise startup or upgrades use a temporary file from `t.TempDir()`. Never
+point a test at `data/meerkat.db`.
+
+```go
+db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+```
+
+### Upgrade tests
+
+`backend/database/upgrade_test.go` embeds the committed fixtures in
+`backend/database/testdata/fixtures/`, upgrades each one through the production
+`InitDB`, and checks row counts, spot values, snapshots, dirty-schema refusal and
+newer-schema refusal.
+
+```sh
+make test-upgrade
+```
 
 ### Writing Tests
 
-Use the test helpers in the `_test` files alongside each package. Set up a test DB with `database.NewTestDB()` (or equivalent), create a Gin test context, and call controller functions directly. Assert on the `httptest.ResponseRecorder`.
+Use the test helpers in the `_test` files alongside each package. Create a Gin
+test context and call controller functions directly. Assert on the
+`httptest.ResponseRecorder`.
 
 ## Frontend Tests
 
-There are no isolated frontend tests with yarn test, since this requires code/logic duplication for mocking. Instead Playwright is used to run integrated E2E tests.
+Frontend unit tests use Vitest and React Testing Library:
+
+```sh
+cd frontend
+corepack yarn test
+```
+
+Playwright covers integrated E2E flows against the Docker test stack.
 
 ### Setup
 

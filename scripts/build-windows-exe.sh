@@ -24,7 +24,7 @@ BACKEND="$ROOT/backend"
 WEBDIR="$BACKEND/web/dist"
 OUT="$ROOT/dist"
 
-VERSION="0.5.0"
+VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
 ZIP="$OUT/historial-windows-v$VERSION.zip"
 
 # 1) Build the React app with a relative API base so it talks to the same
@@ -60,7 +60,7 @@ echo "==> Compiling Windows .exe"
 (
   cd "$BACKEND"
   CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
-    go build -tags web_embed -trimpath -ldflags "-s -w" \
+    go build -tags web_embed -trimpath -ldflags "-s -w -X meerkat/version.Version=$VERSION" \
     -o "$OUT/historial.exe" .
 )
 
@@ -68,7 +68,7 @@ echo "==> Compiling Linux test binary"
 (
   cd "$BACKEND"
   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -tags web_embed -trimpath -ldflags "-s -w" \
+    go build -tags web_embed -trimpath -ldflags "-s -w -X meerkat/version.Version=$VERSION" \
     -o "$OUT/historial-linux" .
 )
 

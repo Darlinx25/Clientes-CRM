@@ -10,8 +10,9 @@ setup('authenticate', async ({ page }) => {
   await page.getByLabel(/password/i).fill(TEST_USER.password);
   await page.getByRole('button', { name: /login/i }).click();
 
-  // Landing on the dashboard confirms both the cookie and cached user info are set.
-  await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({
+  // Landing on the contacts list confirms both the cookie and cached user info are set.
+  await expect(page).toHaveURL(/\/contacts/);
+  await expect(page.getByRole('heading', { name: /contacts/i })).toBeVisible({
     timeout: 15000,
   });
 

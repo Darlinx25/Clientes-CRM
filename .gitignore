@@ -7,11 +7,14 @@
 *.db
 *.db-shm
 *.db-wal
+*.db.lock
 meerkat.db
+meerkat.db.lock
 
 # Runtime data (Docker volumes: SQLite DB y fotos). NUNCA subir a Git.
 data/
 photos/
+backups/
 
 # TLS/SSL certificates
 *.pem
@@ -98,3 +101,6 @@ CLAUDE.md
 BACKLOG.md
 fly.demo.toml
 fly.test.toml
+
+# Upgrade fixtures are intentionally committed test data, not runtime databases
+!backend/database/testdata/fixtures/*.db

@@ -23,8 +23,9 @@ test.describe('Authentication', () => {
       await page.getByLabel(/password/i).fill(TEST_USER.password);
       await page.getByRole('button', { name: /login/i }).click();
 
-      // Should show dashboard after login
-      await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
+      // The authenticated app lands on the contacts list.
+      await expect(page).toHaveURL(/\/contacts/);
+      await expect(page.getByRole('heading', { name: /contacts/i })).toBeVisible({ timeout: 10000 });
     });
 
     test('should show error with invalid credentials', async ({ page }) => {
@@ -88,7 +89,8 @@ test.describe('Authentication', () => {
       await page.getByLabel(/username or email/i).fill(username);
       await page.getByLabel(/password/i).fill('RegPassword123!');
       await page.getByRole('button', { name: /login/i }).click();
-      await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
+      await expect(page).toHaveURL(/\/contacts/);
+      await expect(page.getByRole('heading', { name: /contacts/i })).toBeVisible({ timeout: 10000 });
     });
   });
 

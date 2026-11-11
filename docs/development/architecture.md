@@ -39,7 +39,14 @@ return nil, apperrors.New(http.StatusNotFound, "CONTACT_NOT_FOUND", "contact not
 
 ### Database Layer
 
-SQLite via GORM. All SQL migrations live in `database/migrations/` as embedded files and run automatically on startup in version order. Use `make migrate-create NAME=xxx` to add a new migration.
+SQLite via GORM. All SQL migrations live in `database/migrations/` as embedded
+files and run automatically on startup in version order. Use
+`make migrate-create NAME=xxx` to add a new migration, then
+`make migrations-checksum` and `make test-upgrade`.
+
+`database.InitDB` takes a pre-upgrade snapshot with `VACUUM INTO`, refuses dirty
+schemas, holds an advisory lock during migration and runs `PRAGMA quick_check`
+afterward. See [Upgrades](../upgrades.md).
 
 Every table includes `user_id` for multi-tenant isolation and all queries must filter by it.
 

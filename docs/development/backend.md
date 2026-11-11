@@ -44,13 +44,30 @@ This creates two files in `database/migrations/`: `NNNNNN_add_foo_column.up.sql`
 
 ### Running Migrations
 
-Migrations run automatically on startup. To apply or roll back manually:
+Migrations run automatically on startup through `database.InitDB`, which
+snapshots an existing database first and refuses a dirty schema. For local
+development you can inspect status or apply pending migrations:
 
 ```sh
-make migrate-up
-make migrate-down
 make migrate-status
+make migrate-up
 ```
+
+`make migrate-down` is for development only. Never force a dirty schema on a
+user's database.
+
+### Upgrade safety checks
+
+After adding a migration:
+
+```sh
+make migrations-checksum   # append the new file to migrations.lock
+make migrations-lint       # checksums, gaps, destructive SQL
+make test-upgrade          # old fixtures -> latest schema, no row loss
+```
+
+Historical migrations and `migrations.lock` are immutable. See
+[Upgrades](../upgrades.md) for the full contract.
 
 ## Models and DTOs
 

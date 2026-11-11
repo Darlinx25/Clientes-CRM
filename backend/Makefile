@@ -1,4 +1,4 @@
-.PHONY: migrate-up migrate-down migrate-create migrate-status migrate-force migrate-version help
+.PHONY: migrate-up migrate-down migrate-create migrate-status migrate-version migrations-lint migrations-checksum fixtures test-upgrade help
 
 # Database path
 DB_PATH ?= meerkat.db
@@ -32,18 +32,23 @@ migrate-status: ## Show current migration version
 	@echo "Current migration status for $(DB_PATH):"
 	@go run cmd/migrate/main.go version
 
-migrate-force: ## Force set migration version (usage: make migrate-force VERSION=1)
-	@if [ -z "$(VERSION)" ]; then \
-		echo "Error: VERSION is required. Usage: make migrate-force VERSION=1"; \
-		exit 1; \
-	fi
-	@echo "Forcing migration version to $(VERSION) on $(DB_PATH)..."
-	@migrate -path $(MIGRATIONS_DIR) -database "sqlite3://$(DB_PATH)" force $(VERSION)
-	@echo "Migration version forced to $(VERSION)!"
-
 migrate-version: ## Show available migration files
 	@echo "Available migration files:"
 	@ls -1 $(MIGRATIONS_DIR)/*.sql 2>/dev/null || echo "No migration files found"
+
+migrations-lint: ## Check migration checksums, version gaps and destructive statements
+	@go run ./cmd/migrationtool lint
+
+migrations-checksum: ## Add newly created migrations to migrations.lock (never rewrites history)
+	@go run ./cmd/migrationtool checksum -update
+	@go run ./cmd/migrationtool lint
+
+fixtures: ## Rebuild the upgrade-rehearsal fixtures from committed migrations
+	@go run ./cmd/mkfixture -version 23 -out database/testdata/fixtures/v000023.db -force
+	@go run ./cmd/mkfixture -version 39 -out database/testdata/fixtures/v000039.db -force
+
+test-upgrade: ## Run the upgrade rehearsal against every committed fixture
+	@go test ./database -run 'TestUpgrade|TestDirty|TestNewDatabase|TestNewer|TestMigration|TestLatest' -v
 
 # Development helpers
 dev: ## Build and run the server in development mode

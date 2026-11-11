@@ -49,13 +49,17 @@ Basado en [Meerkat CRM](https://github.com/fbuchner/meerkat-crm) simplificado.
   día (ej. viernes) y la hora (ej. 18:00) y activá el interruptor. La app crea
   el backup sola cada semana en la misma carpeta `backups\`.
 - Alternativa desde la máquina: doble clic en `hacer-backup.cmd`.
+- **Antes de una actualización**, si la base necesita cambios, la app guarda
+  sola un snapshot de la base en `backups\pre-upgrade-*.db`. Si algo falla,
+  ese archivo permite volver atrás sin perder datos.
 
 ### Actualizar la app
 1. Hacé un backup (paso anterior).
 2. Cerrá la app (o deshabilitá la tarea "Historial autoarranque"), reemplazá
    `historial.exe` por la versión nueva y volvé a abrirlo.
-3. Los datos NO se tocan: viven en `C:\Historial\data\` y `C:\Historial\photos\`.
-   Las actualizaciones de la base se aplican solas en el primer arranque.
+3. Los datos NO se tocan: viven en `C:\Historial\data\`. Las actualizaciones
+   de la base se aplican solas en el primer arranque y, antes de tocarla, se
+   crea un snapshot de recuperación en `backups\`.
 
 ### Cómo funciona por adentro 
 `historial.exe` contiene la página web, el programa y la base de datos. Al
@@ -210,7 +214,11 @@ Filtros: por fecha desde/hasta.
 
 ## Base de datos
 
-SQLite, ubicada en `./data/meerkat.db`. Las migraciones se aplican automáticamente al iniciar el backend. La migración más reciente es la `000024` que agrega el campo `title` a la tabla `notes`.
+SQLite, ubicada en `./data/meerkat.db`. Las migraciones se aplican
+automáticamente al iniciar el backend. Los archivos están en
+`backend/database/migrations/`, el manifest de integridad en
+`backend/database/migrations.lock` y las pruebas de actualización en
+`backend/database/testdata/fixtures/`.
 
 ### Backup
 ```sh

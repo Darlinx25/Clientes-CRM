@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests and upgrade rehearsal
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Migration checksums and lint
+        run: go run ./cmd/migrationtool lint
+      - name: Upgrade fixtures to latest
+        run: go test ./database -run 'TestUpgrade|TestDirty|TestNewDatabase|TestNewer|TestMigration|TestLatest' -v
+      - name: All Go tests
+        run: go test ./...
+
+  frontend:
+    name: Frontend type-check, tests and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - run: corepack enable
+      - run: corepack yarn install --frozen-lockfile
+      - run: corepack yarn tsc --noEmit
+      - run: corepack yarn tsc -p tsconfig.node.json --noEmit
+      - run: corepack yarn test
+      - run: corepack yarn build
+        env:
+          CI: "true"
+          REACT_APP_API_URL: ""

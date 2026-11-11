@@ -4,16 +4,24 @@ import (
 	"net/http"
 	"time"
 
+	"meerkat/database"
+	"meerkat/version"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 // HealthResponse represents the health check response structure
 type HealthResponse struct {
-	Status    string         `json:"status"`
-	Timestamp string         `json:"timestamp"`
-	Database  DatabaseHealth `json:"database"`
-	Version   string         `json:"version"`
+	Status         string         `json:"status"`
+	Timestamp      string         `json:"timestamp"`
+	Database       DatabaseHealth `json:"database"`
+	Version        string         `json:"version"`
+	AppVersion     string         `json:"app_version"`
+	SchemaVersion  int            `json:"schema_version"`
+	ExpectedSchema uint           `json:"expected_schema_version"`
+	SchemaDirty    bool           `json:"schema_dirty"`
+	SchemaUpToDate bool           `json:"schema_up_to_date"`
 }
 
 // DatabaseHealth represents the database health status
@@ -40,10 +48,17 @@ func HealthCheck(c *gin.Context) {
 	}
 
 	response := HealthResponse{
-		Status:    status,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-		Database:  dbHealth,
-		Version:   "0.2.0",
+		Status:     status,
+		Timestamp:  time.Now().UTC().Format(time.RFC3339),
+		Database:   dbHealth,
+		Version:    version.Version,
+		AppVersion: version.Version,
+	}
+	if schema, err := database.GetSchemaInfo(db); err == nil {
+		response.SchemaVersion = schema.Current
+		response.ExpectedSchema = schema.Expected
+		response.SchemaDirty = schema.Dirty
+		response.SchemaUpToDate = schema.UpToDate
 	}
 
 	c.JSON(httpStatus, response)

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"meerkat/version"
+
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -57,6 +59,18 @@ func TestHealthCheck(t *testing.T) {
 
 	if response.Version == "" {
 		t.Error("Expected version to be set")
+	}
+	if response.AppVersion != version.Version {
+		t.Errorf("Expected app version %q, got %q", version.Version, response.AppVersion)
+	}
+	if response.SchemaVersion != -1 {
+		t.Errorf("Expected schema version -1 for a database without migrations, got %d", response.SchemaVersion)
+	}
+	if response.ExpectedSchema == 0 {
+		t.Error("Expected expected_schema_version to be set")
+	}
+	if response.SchemaUpToDate {
+		t.Error("A database without migrations should not report schema up to date")
 	}
 
 	if response.Timestamp == "" {

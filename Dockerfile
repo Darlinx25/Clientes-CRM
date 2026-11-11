@@ -19,11 +19,13 @@ WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 
-# Copy backend source code
+# Copy backend source code and the single source of the release version
 COPY backend/ .
+COPY VERSION ./VERSION
 
 # Build the application (glebarez/sqlite is pure Go (no CGO, i.e. without QEMU)
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o meerkat .
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -ldflags "-s -w -X meerkat/version.Version=$(cat VERSION)" -o meerkat .
 
 # =============================================================================
 # Stage 2: Build React frontend (same-origin API, served by nginx)

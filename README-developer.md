@@ -30,8 +30,15 @@
 - Container defaults (`PORT`, `SQLITE_DB_PATH`, `PROFILE_PHOTO_DIR`) are set in the root [Dockerfile](Dockerfile); override via `.env` if needed. `PORT` is the backend's internal bind port (8081) — nginx listens on 8080, which is what's actually exposed from the container.
 - The frontend bundle is built with an empty `REACT_APP_API_URL` so it calls the API on relative paths; nginx (see [docker/nginx.conf](docker/nginx.conf)) proxies `/api`, `/health`, and `/carddav` to the backend on `127.0.0.1:8081`.
 
+**Upgrade safety**
+- The product rule is that replacing the binary must open an existing database without losing data. Read [docs/upgrades.md](docs/upgrades.md) before changing schema or startup code.
+- `InitDB` snapshots the database with `VACUUM INTO` before an upgrade, refuses dirty schemas, takes an advisory lock and runs `PRAGMA quick_check` afterward. Never add an automatic `migrate.Force`.
+- Historical migrations are immutable. Add a new numbered pair and run `make migrations-checksum`, `make migrations-lint`, and `make test-upgrade`.
+- Upgrade fixtures in [backend/database/testdata/fixtures](backend/database/testdata/fixtures) are embedded in tests and must keep reaching the latest schema without row loss.
+
 **Testing**
-- Backend Go tests (`go test ./...` or `make test`) spin up in-memory SQLite in helpers like [backend/controllers/activity_controller_test.go](backend/controllers/activity_controller_test.go); mirror that pattern for new suites.
+- Backend Go tests (`go test ./...` or `make test`) spin up in-memory SQLite in helpers like [backend/controllers/activity_controller_test.go](backend/controllers/activity_controller_test.go); mirror that pattern for new suites. Never point a test at `data/meerkat.db`.
+- `make test-upgrade` exercises committed old databases through the production `InitDB` path, including dirty-schema refusal and pre-upgrade snapshots.
 - Validation and middleware behavior has dedicated coverage in [backend/middleware/validation_test.go](backend/middleware/validation_test.go) and related files—extend these before touching shared validators.
 - Reminder scheduling is covered in [backend/services/reminder_service_test.go](backend/services/reminder_service_test.go) with clock control helpers; keep cron changes tested there.
 - Frontend unit tests run with `yarn test` and rely on React Testing Library setup in [frontend/src/setupTests.ts](frontend/src/setupTests.ts), which already registers jest-dom.
@@ -41,7 +48,7 @@
 - Start the test stack: `docker compose -f docker-compose.test.yml up -d --build`
 - Run tests: `cd frontend && npm run test:e2e` (or `test:e2e:ui` for interactive mode)
 - Stop and clean up: `docker compose -f docker-compose.test.yml down -v`
-- Tests run automatically in CI on push/PR to main via [.github/workflows/e2e-tests.yml](.github/workflows/e2e-tests.yml).
+- CI runs backend tests, upgrade rehearsals, migration lint, frontend type-checking, unit tests and a production build via [.github/workflows/ci.yml](.github/workflows/ci.yml). E2E remains a manual Docker-based check unless a dedicated workflow is added.
 
 **CardDAV client sync tests**
 - The contact sync scenarios in [backend/services/contact_sync_service_test.go](backend/services/contact_sync_service_test.go) run against every backend listed in `contactSyncBackends()`; the harness lives in [backend/services/contact_sync_remote_test.go](backend/services/contact_sync_remote_test.go).

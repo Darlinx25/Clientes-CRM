@@ -14,8 +14,8 @@ export async function loginUser(page: Page, credentials = TEST_USER): Promise<vo
   await page.goto('/');
 
   // Already authenticated (e.g. shared storageState is active) — nothing to do.
-  const dashboardHeading = page.getByRole('heading', { name: /dashboard/i });
-  if (await dashboardHeading.isVisible({ timeout: 1000 }).catch(() => false)) {
+  const contactsHeading = page.getByRole('heading', { name: /contacts/i });
+  if (await contactsHeading.isVisible({ timeout: 1000 }).catch(() => false)) {
     return;
   }
 
@@ -23,7 +23,7 @@ export async function loginUser(page: Page, credentials = TEST_USER): Promise<vo
   await page.getByLabel(/password/i).fill(credentials.password);
   await page.getByRole('button', { name: /login/i }).click();
 
-  await expect(dashboardHeading).toBeVisible({ timeout: 15000 });
+  await expect(contactsHeading).toBeVisible({ timeout: 15000 });
 }
 
 /**

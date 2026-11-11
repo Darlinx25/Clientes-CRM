@@ -8,12 +8,12 @@ nav_order: 3
 
 ## Setup
 
-Requires Node.js and Yarn.
+Requires Node.js 22.12+ and Yarn 1.22 (managed by Corepack).
 
 ```sh
 cd frontend
 cp .env.example .env  # set REACT_APP_API_URL if backend isn't on localhost:8080
-yarn install
+corepack yarn install --frozen-lockfile
 ```
 
 ## Running Locally
@@ -56,4 +56,4 @@ All user-facing strings must be translated. Add keys to both `src/i18n/locales/e
 
 ## Testing
 
-The frontend is tested via Playwright E2E tests against a running application. See [Testing](testing.md).
+Unit tests use Vitest (`corepack yarn test`). Playwright E2E tests run against the Docker stack. See [Testing](testing.md).

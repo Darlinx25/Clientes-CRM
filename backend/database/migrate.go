@@ -32,7 +32,13 @@ func pragmaDSN(dbPath string) string {
 // A single pooled connection is used on purpose: SQLite serialises writers
 // through one connection, which removes "database is locked" failures when
 // several users read and write at the same time.
-func InitDB(dbPath string) (*gorm.DB, error) {
+//
+// If backupDir is provided and the database needs migrations (or is dirty), a
+// consistent snapshot is written before anything is changed. This is the safety
+// net behind the repository's upgrade contract: an instance in use can always
+// be updated without losing data, and a failed migration is recoverable from
+// that snapshot.
+func InitDB(dbPath string, backupDir ...string) (*gorm.DB, error) {
 	// Open database connection for migrations
 	sqlDB, err := sql.Open("sqlite", pragmaDSN(dbPath))
 	if err != nil {
@@ -41,14 +47,72 @@ func InitDB(dbPath string) (*gorm.DB, error) {
 	sqlDB.SetMaxOpenConns(1)
 	sqlDB.SetMaxIdleConns(1)
 
+	release, err := acquireDBLock(dbPath + ".lock")
+	if err != nil {
+		_ = sqlDB.Close()
+		return nil, err
+	}
+	defer release()
+
+	latest, err := LatestMigrationVersion()
+	if err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("read migration version: %w", err)
+	}
+	current, dirty, err := readSchemaVersion(sqlDB)
+	if err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("read current schema version: %w", err)
+	}
+
+	needsUpgrade := current < int(latest)
+	backup := ""
+	if dirty || (needsUpgrade && current >= 0) {
+		dir := ""
+		if len(backupDir) > 0 {
+			dir = backupDir[0]
+		}
+		backup, err = CreatePreUpgradeSnapshot(dbPath, dir, current, latest)
+		if err != nil {
+			_ = sqlDB.Close()
+			return nil, fmt.Errorf("create pre-upgrade backup: %w", err)
+		}
+		if backup != "" {
+			logger.Warn().Str("backup", backup).Int("from", current).Uint("to", latest).Msg("Created pre-upgrade database snapshot")
+		}
+	}
+
+	if dirty {
+		_ = sqlDB.Close()
+		if backup != "" {
+			return nil, fmt.Errorf("database schema is dirty at version %d; refusing to force it. A snapshot was saved to %s; restore it or inspect the failed migration before retrying", current, backup)
+		}
+		return nil, fmt.Errorf("database schema is dirty at version %d; refusing to force it. Restore the last backup before retrying", current)
+	}
+
+	if current > int(latest) {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("database schema version %d is newer than this build's version %d; update the application instead of opening it with an older binary", current, latest)
+	}
+
 	// Run migrations
 	if err := RunMigrations(sqlDB); err != nil {
+		_ = sqlDB.Close()
+		if backup != "" {
+			return nil, fmt.Errorf("failed to run migrations (pre-upgrade snapshot: %s): %w", backup, err)
+		}
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	if err := quickCheck(sqlDB); err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("database integrity check after migrations failed: %w", err)
 	}
 
 	// Open GORM connection on the same pool so the pragmas apply to every query
 	db, err := gorm.Open(sqlite.Dialector{Conn: sqlDB}, &gorm.Config{})
 	if err != nil {
+		_ = sqlDB.Close()
 		return nil, fmt.Errorf("failed to connect with GORM: %w", err)
 	}
 
@@ -72,17 +136,15 @@ func RunMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to create migration instance: %w", err)
 	}
 
-	// Get current version
+	// Never force a dirty version automatically: doing so can skip a migration
+	// that failed halfway and silently corrupt data. InitDB reports dirty
+	// databases to the user with the pre-upgrade snapshot path instead.
 	version, dirty, err := m.Version()
 	if err != nil && err != migrate.ErrNilVersion {
 		return fmt.Errorf("failed to get migration version: %w", err)
 	}
-
 	if dirty {
-		logger.Warn().Uint("version", version).Msg("Database is in dirty state, forcing version")
-		if err := m.Force(int(version)); err != nil {
-			return fmt.Errorf("failed to force version: %w", err)
-		}
+		return fmt.Errorf("database schema is dirty at version %d; refusing to run migrations automatically", version)
 	}
 
 	// Run migrations

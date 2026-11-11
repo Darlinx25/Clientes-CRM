@@ -203,4 +203,4 @@ Response includes `token` (the `meerkat_…` plaintext value) only on creation. 
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | Health check (no auth, no versioning). Accessible directly (without prepending base URL). |
+| `GET` | `/health` | Health check (no auth, no versioning). Accessible directly (without prepending base URL). Returns app version, database status and schema upgrade state. |
