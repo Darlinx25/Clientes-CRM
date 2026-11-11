@@ -38,5 +38,5 @@ fixtures: ## Rebuild committed upgrade fixtures
 test-upgrade: ## Rehearse upgrades from every committed fixture
 	$(MAKE) -C $(BACKEND) test-upgrade
 
-release-check: migrations-lint test-upgrade backend-test frontend-typecheck frontend-test frontend-build ## Full pre-release gate
+release-check: migrations-lint backend-test frontend-typecheck frontend-test frontend-build ## Full pre-release gate
 	@echo "Release checks passed. Remember to build the Windows/Linux artifacts with scripts/build-windows-exe.sh."

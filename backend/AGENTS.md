@@ -1,6 +1,6 @@
 # Backend agent notes
 
-Read the root `AGENTS.md` first. This file only adds backend-specific rules.
+Read the root `AGENTS.md` first. This file adds backend-specific rules.
 
 ## Database and upgrades
 
@@ -10,25 +10,17 @@ Read the root `AGENTS.md` first. This file only adds backend-specific rules.
 - `RunMigrations` must never call `m.Force(...)`.
 - Historical migrations are immutable. Add `0000NN_description.up.sql` and
   `.down.sql`, then run `make -C backend migrations-checksum`.
-- Any new destructive statement (DROP, RENAME, unqualified DELETE/UPDATE) is
-  rejected from migration `000040` onward. If it is truly safe, document the
-  reason with:
-
-  ```sql
-  -- migration:allow-destructive reason=short explanation
-  ```
-
-  and make sure a fixture proves existing data survives.
-- `backend/database/migrations.lock` records SHA256 hashes. It is not a place
-  to hand-edit. `make migrations-lint` must pass.
+- Destructive SQL is rejected from migration `000040` onward unless the file
+  contains `-- migration:allow-destructive reason=...` and a fixture proves
+  existing data survives.
+- `backend/database/migrations.lock` stores SHA256 hashes. Do not hand-edit it.
 - `SeedAdminUser` may create the first admin. It must never reset an existing
   admin password on startup.
 
 ## Tests
 
-- `go test ./...` is the baseline.
-- `go test ./database -run 'TestUpgrade|TestDirty|TestNewDatabase|TestNewer|TestMigration|TestLatest' -v`
-  is the upgrade rehearsal.
+- `make backend-test` is the baseline.
+- `make test-upgrade` runs the upgrade rehearsal.
 - Fixtures live in `backend/database/testdata/fixtures/` and are embedded into
   the tests. Regenerate only with `make -C backend fixtures`.
 - Controller tests use `:memory:` SQLite and a router built in the test. Follow
@@ -41,5 +33,4 @@ Read the root `AGENTS.md` first. This file only adds backend-specific rules.
   `backend/routes/routes.go`.
 - Never log secrets, passwords, reset tokens, or full request bodies that may
   contain credentials.
-- Health responses must keep working when the database has no migration table
-  (tests open a raw `:memory:` database).
+- Health responses must keep working when the database has no migration table.

@@ -6,7 +6,7 @@ Create the next database migration for this repository.
 
 Request: $ARGUMENTS
 
-Follow `db-migration-safety` and `docs/upgrades.md`:
+Follow `db-upgrade-safety` and `docs/upgrades.md`:
 
 1. Inspect the current highest migration number and the relevant models.
 2. Create the next `.up.sql`/`.down.sql` pair in

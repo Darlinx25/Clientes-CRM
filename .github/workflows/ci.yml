@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   backend:
-    name: Backend tests and upgrade rehearsal
+    name: Backend tests and migration lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,8 +24,6 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Migration checksums and lint
         run: go run ./cmd/migrationtool lint
-      - name: Upgrade fixtures to latest
-        run: go test ./database -run 'TestUpgrade|TestDirty|TestNewDatabase|TestNewer|TestMigration|TestLatest' -v
       - name: All Go tests
         run: go test ./...
 

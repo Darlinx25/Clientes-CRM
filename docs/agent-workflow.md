@@ -6,8 +6,8 @@ nav_order: 6
 
 # Agent workflow
 
-This repository is configured for OpenCode. `opencode.json` loads the
-repository instructions and restricts edits to the paths that can destroy data.
+OpenCode loads `AGENTS.md`, `backend/AGENTS.md`, and `frontend/AGENTS.md` at
+startup. Keep those files short and put detailed procedures in this directory.
 
 ## After changing OpenCode files
 
@@ -17,73 +17,59 @@ session keeps using the old configuration.
 
 ## Instruction files
 
-- `AGENTS.md`: product rule, repository map, commands, definition of done.
-- `backend/AGENTS.md`: migration, startup, seed and backend test rules.
-- `frontend/AGENTS.md`: API client, i18n, MUI and frontend test rules.
-- `docs/upgrades.md`: the database contract.
+- `AGENTS.md`: product rule, commands, protected files and definition of done.
+- `backend/AGENTS.md`: migrations, startup, seeds and backend tests.
+- `frontend/AGENTS.md`: API client, i18n, MUI and frontend tests.
+- `docs/upgrades.md`: database upgrade contract, as reference.
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
 | `/new-migration <description>` | Add the next migration, refresh checksums and rehearse the upgrade |
-| `/validate-upgrade` | Run lint, upgrade fixtures and all backend tests |
 | `/release-check` | Run the full local release gate |
 
-These are thin wrappers around `make` targets, so the same checks work in CI.
+`make test-upgrade` remains available for a direct upgrade rehearsal.
 
 ## Skills
 
-Skills live under `.opencode/skills/` and are loaded when a task matches their
-description:
+Skills live under `.opencode/skills/` and load only when a task matches:
 
-- `db-migration-safety`: schema changes, migrations, seeds, backups.
-- `upgrade-rehearsal`: proving old databases still upgrade without row loss.
-- `release-versioning`: `VERSION`, winres, build scripts, release gate.
+- `db-upgrade-safety`: schema changes, migrations, seeds, backups and upgrade
+  rehearsals.
+- `release-versioning`: `VERSION`, winres, build scripts and release checks.
 
-## Subagents
+## Subagent
 
 - `migration-reviewer`: read-only review of migrations, seeds, backups and
   upgrade tests.
-- `ui-verifier`: read-only review of React/MUI changes, API usage, i18n and
-  tests.
 
-Use them before finishing a risky change:
+Use it before finishing a risky database change:
 
 ```text
 @migration-reviewer review the current diff for data-loss risk
-@ui-verifier review the frontend changes
 ```
 
-## Permission model
+## Permissions
 
 - `data/`, `photos/`, `.env`, databases and fixtures are protected.
-- Any edit under `backend/database/migrations/`, `migrations.lock`,
-  `VERSION`, `winres.json` or the CI workflows asks for confirmation.
+- Edits under `backend/database/migrations/`, `migrations.lock`, `VERSION`,
+  `winres.json` and CI workflows ask for confirmation.
 - `git commit`, `git push`, `git tag`, `rm -rf`, `git reset --hard` and
   `git clean` are restricted.
 
-The agent must never use `data/meerkat.db` for tests. All test databases come
-from `t.TempDir()` or `:memory:`.
+Never use `data/meerkat.db` for tests. Use `t.TempDir()` or `:memory:`.
 
 ## Recommended loop
 
 ```bash
-# 1. Understand
-make -C backend test-upgrade
-
-# 2. Change code / add a migration
-make -C backend migrations-checksum   # only for NEW migration files
-
-# 3. Verify
+make test-upgrade
 make migrations-lint
 make backend-test
 make frontend-typecheck   # when TypeScript changed
 make frontend-test        # when frontend behavior changed
-
-# 4. Before a release
-make release-check
+make release-check        # before a release
 ```
 
-If a safety check fails, fix the cause. Do not relax the fixture, delete the
-snapshot, force a dirty migration, or edit a historical migration.
+If a safety check fails, fix the cause. Do not relax fixtures, delete
+snapshots, force a dirty migration, or edit a historical migration.

@@ -3,9 +3,7 @@
   "instructions": [
     "AGENTS.md",
     "backend/AGENTS.md",
-    "frontend/AGENTS.md",
-    "docs/upgrades.md",
-    "docs/agent-workflow.md"
+    "frontend/AGENTS.md"
   ],
   "skills": {
     "paths": [".opencode/skills"]
