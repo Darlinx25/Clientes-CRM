@@ -211,6 +211,25 @@ func RegisterRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, oidcPro
 			admin.GET("/auto-backup", controllers.GetAutoBackupSchedule)
 			admin.PUT("/auto-backup", middleware.ValidateJSONMiddleware(&models.AutoBackupInput{}), controllers.UpdateAutoBackupSchedule)
 		}
+
+		adminPanel := v1.Group("/admin/panel")
+		adminPanel.Use(middleware.APIRateLimitMiddleware())
+		adminPanel.Use(middleware.AuthMiddleware(cfg))
+		adminPanel.Use(middleware.AdminMiddleware())
+		{
+			adminPanel.POST("/session", middleware.AuthRateLimitMiddleware(), middleware.ValidateJSONMiddleware(&models.AdminPanelReauthInput{}), controllers.AdminPanelSession)
+			adminPanel.DELETE("/session", controllers.AdminPanelSessionDelete)
+
+			panel := adminPanel.Group("/")
+			panel.Use(middleware.AdminSessionMiddleware(cfg))
+			{
+				panel.GET("/overview", controllers.AdminPanelOverview)
+				panel.GET("/tables", controllers.AdminPanelTables)
+				panel.GET("/tables/:table", controllers.AdminPanelTableRows)
+				panel.GET("/backups", controllers.AdminPanelBackups)
+				panel.GET("/backups/:filename", controllers.AdminPanelDownloadBackup)
+			}
+		}
 	}
 
 	// CardDAV routes (optional, enabled via CARDDAV_ENABLED)

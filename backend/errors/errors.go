@@ -45,11 +45,12 @@ func (e *AppError) WithError(err error) *AppError {
 // Error codes
 const (
 	// Authentication & Authorization
-	ErrCodeUnauthorized       = "UNAUTHORIZED"
-	ErrCodeInvalidCredentials = "INVALID_CREDENTIALS"
-	ErrCodeTokenExpired       = "TOKEN_EXPIRED"
-	ErrCodeTokenInvalid       = "TOKEN_INVALID"
-	ErrCodeForbidden          = "FORBIDDEN"
+	ErrCodeUnauthorized         = "UNAUTHORIZED"
+	ErrCodeAdminSessionRequired = "ADMIN_SESSION_REQUIRED"
+	ErrCodeInvalidCredentials   = "INVALID_CREDENTIALS"
+	ErrCodeTokenExpired         = "TOKEN_EXPIRED"
+	ErrCodeTokenInvalid         = "TOKEN_INVALID"
+	ErrCodeForbidden            = "FORBIDDEN"
 
 	// Resource errors
 	ErrCodeNotFound      = "NOT_FOUND"
@@ -92,6 +93,12 @@ func ErrUnauthorized(message string) *AppError {
 		message = "Authentication required"
 	}
 	return NewError(ErrCodeUnauthorized, message, http.StatusUnauthorized)
+}
+
+// ErrAdminSessionRequired returns an error when the short-lived admin panel
+// session is missing or expired.
+func ErrAdminSessionRequired() *AppError {
+	return NewError(ErrCodeAdminSessionRequired, "Admin session required", http.StatusUnauthorized)
 }
 
 // ErrInvalidCredentials returns an invalid credentials error

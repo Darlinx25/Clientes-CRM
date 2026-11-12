@@ -3,9 +3,10 @@ import ContactsPage from './ContactsPage';
 import ContactDetailPage from './ContactDetailPage';
 import TimelinePage from './TimelinePage';
 import SettingsPage from './SettingsPage';
+import AdminPage from './AdminPage';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
-import { getToken, logoutAndRedirect, fetchAndCacheUserInfo } from './auth';
+import { getToken, logoutAndRedirect, fetchAndCacheUserInfo, isAdmin } from './auth';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,6 +20,7 @@ import {
 import ContactsIcon from '@mui/icons-material/Contacts';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import './App.css';
 
@@ -37,6 +39,7 @@ function ScrollToTop() {
 function AppContent({ token, setToken }: { token: string | null; setToken: (token: string | null) => void }) {
   const { t } = useTranslation();
   const location = useLocation();
+  const admin = isAdmin();
 
   const handleLogout = async () => {
     await logoutAndRedirect();
@@ -127,6 +130,18 @@ function AppContent({ token, setToken }: { token: string | null; setToken: (toke
             gap: 0.5,
           }}
         >
+          {admin && (
+            <Tooltip title={t('nav.admin')}>
+              <IconButton
+                component={Link}
+                to="/admin"
+                color={isActiveRoute('/admin') ? 'primary' : 'default'}
+                size="large"
+              >
+                <AdminPanelSettingsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title={t('nav.settings')}>
             <IconButton
               component={Link}
@@ -151,6 +166,9 @@ function AppContent({ token, setToken }: { token: string | null; setToken: (toke
           <Route path="/contacts/:id" element={<Suspense fallback={<Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>}><ContactDetailPage /></Suspense>} />
           <Route path="/timeline" element={<Suspense fallback={<Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>}><TimelinePage /></Suspense>} />
           <Route path="/settings" element={<Suspense fallback={<Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>}><SettingsPage /></Suspense>} />
+          {admin && (
+            <Route path="/admin" element={<Suspense fallback={<Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>}><AdminPage /></Suspense>} />
+          )}
           <Route path="/" element={<Navigate to="/contacts" replace />} />
           <Route path="/login" element={<Navigate to="/contacts" replace />} />
           <Route path="/register" element={<Navigate to="/contacts" replace />} />

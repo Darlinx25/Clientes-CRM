@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"meerkat/adminauth"
 	"meerkat/config"
 	"meerkat/logger"
 	"meerkat/models"
@@ -98,6 +99,12 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			if claimType, _ := claims["token_type"].(string); claimType == adminauth.TokenType {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+				c.Abort()
+				return
+			}
+
 			if username, exists := claims["username"].(string); exists {
 				c.Set("username", username)
 			}

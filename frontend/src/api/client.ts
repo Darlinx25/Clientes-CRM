@@ -76,13 +76,12 @@ export async function parseErrorResponse(response: Response): Promise<ApiError> 
   );
 }
 
-// Centralized fetch wrapper that handles session expiration and timeouts
-export async function apiFetch(
+async function request(
   url: string,
-  options: RequestInit = {},
-  timeout: number = DEFAULT_TIMEOUT
+  options: RequestInit,
+  timeout: number,
+  redirectOn401: boolean
 ): Promise<Response> {
-  // Create AbortController for timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -95,9 +94,7 @@ export async function apiFetch(
 
     clearTimeout(timeoutId);
 
-    // Check if session has expired (401 Unauthorized)
-    if (response.status === 401) {
-      // Session is invalid or expired - logout and redirect
+    if (response.status === 401 && redirectOn401) {
       localStorage.removeItem('user_info');
       window.location.href = '/login';
       throw new Error('Session expired. Please login again.');
@@ -106,14 +103,32 @@ export async function apiFetch(
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
-    
-    // Handle timeout error
+
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error(`Request timeout after ${timeout / 1000} seconds. Please check your connection.`);
     }
-    
+
     throw error;
   }
+}
+
+// Centralized fetch wrapper that handles session expiration and timeouts
+export async function apiFetch(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = DEFAULT_TIMEOUT
+): Promise<Response> {
+  return request(url, options, timeout, true);
+}
+
+// Admin panel requests handle 401 locally so an expired panel session can
+// reopen the reauthentication dialog without logging the user out.
+export async function apiFetchAdminPanel(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = DEFAULT_TIMEOUT
+): Promise<Response> {
+  return request(url, options, timeout, false);
 }
 
 // Helper to create request headers (no longer includes Authorization - using cookies)

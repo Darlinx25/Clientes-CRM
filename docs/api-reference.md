@@ -45,6 +45,7 @@ Common error codes:
 | Code | HTTP status |
 |---|---|
 | `UNAUTHORIZED` | 401 |
+| `ADMIN_SESSION_REQUIRED` | 401 |
 | `INVALID_CREDENTIALS` | 401 |
 | `TOKEN_EXPIRED` | 401 |
 | `FORBIDDEN` | 403 |
@@ -198,6 +199,20 @@ Response includes `token` (the `meerkat_…` plaintext value) only on creation. 
 | `GET` | `/admin/users/:id` | Get a user |
 | `PATCH` | `/admin/users/:id` | Update a user (e.g. set admin flag) |
 | `DELETE` | `/admin/users/:id` | Delete a user |
+
+### Admin panel (read-only)
+
+These endpoints require an admin user plus a short-lived panel session. Call `POST /admin/panel/session` with the current password to set the httpOnly `admin_token` cookie (15 minutes). API tokens cannot access the admin panel. This first version is read-only: it lists data and downloads existing backups but never creates, moves, restores, or deletes them.
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/admin/panel/session` | Reauthenticate and open a 15-minute panel session |
+| `DELETE` | `/admin/panel/session` | Close the panel session |
+| `GET` | `/admin/panel/overview` | App/schema status, counts, jobs, DB/WAL sizes and backup summary |
+| `GET` | `/admin/panel/tables` | List allowlisted tables and row counts |
+| `GET` | `/admin/panel/tables/:table` | Read paginated rows with search and optional deleted rows |
+| `GET` | `/admin/panel/backups` | List full and pre-upgrade backups |
+| `GET` | `/admin/panel/backups/:filename` | Download an existing backup |
 
 ### Health
 

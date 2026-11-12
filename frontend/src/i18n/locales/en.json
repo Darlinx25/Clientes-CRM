@@ -13,6 +13,7 @@
     "reminders": "Reminders",
     "settings": "Settings",
     "profile": "Profile",
+    "admin": "Administration",
     "users": "Users",
     "apiTokens": "API Tokens",
     "integrations": "Integrations",
@@ -403,6 +404,88 @@
     "fetch": "Fetch",
     "urlFetchError": "Failed to fetch image from URL"
   },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Read-only view of system status, data, and backups.",
+    "retry": "Retry",
+    "notAvailable": "—",
+    "tabs": {
+      "overview": "Overview",
+      "data": "Data",
+      "backups": "Backups"
+    },
+    "errors": {
+      "load": "The administration panel could not be loaded.",
+      "forbidden": "You do not have permission to access the administration panel.",
+      "download": "The backup could not be downloaded."
+    },
+    "reauth": {
+      "title": "Confirm access",
+      "description": "Enter your password to open the administration panel.",
+      "password": "Password",
+      "unlock": "Open panel",
+      "unlocking": "Verifying...",
+      "cancel": "Back to contacts",
+      "invalid": "The password is incorrect."
+    },
+    "overview": {
+      "system": "System",
+      "schema": "Schema",
+      "schemaStatus": "Schema status",
+      "upToDate": "Up to date",
+      "pending": "Pending",
+      "dirty": "Incomplete migration",
+      "dirtyWarning": "The database is in an incomplete migration. Do not start the app until you review the state.",
+      "database": "Database",
+      "wal": "WAL file",
+      "backupDir": "Backup folder",
+      "latestBackup": "Latest backup",
+      "noBackups": "No backups",
+      "counts": "Data",
+      "users": "Users",
+      "contacts": "Contacts",
+      "archivedContacts": "Archived contacts",
+      "deletedContacts": "Deleted contacts",
+      "notes": "Notes",
+      "deletedNotes": "Deleted notes",
+      "activities": "Activities",
+      "reminders": "Reminders",
+      "reminderCompletions": "Reminder completions",
+      "companies": "Companies",
+      "relationships": "Relationships",
+      "jobs": "Scheduled jobs",
+      "noJobs": "No jobs recorded.",
+      "lastRun": "Last run",
+      "locked": "Lock",
+      "notLocked": "Free"
+    },
+    "data": {
+      "table": "Table",
+      "search": "Search",
+      "includeDeleted": "Include deleted",
+      "empty": "No rows to display.",
+      "yes": "Yes",
+      "no": "No",
+      "emptyValue": "—",
+      "rowsPerPage": "Rows per page"
+    },
+    "backups": {
+      "title": "Backups",
+      "description": "These files live in the server backup folder. This view does not create, move, or delete backups.",
+      "folder": "Folder",
+      "empty": "There are no backups in the configured folder yet.",
+      "filename": "File",
+      "kind": "Type",
+      "size": "Size",
+      "created": "Created",
+      "download": "Download",
+      "kinds": {
+        "backup": "Full backup",
+        "preUpgrade": "Pre-upgrade"
+      }
+    }
+  },
+
   "settings": {
     "title": "Settings",
     "language": {

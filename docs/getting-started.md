@@ -55,7 +55,7 @@ The backend process runs as a non-root user (default UID/GID 1001), and a startu
 ## Post-Installation Setup
 
 When running Meerkat-CRM you can access the application under the specified port (default is `7300`). 
-To get started you need to register a user. The first user will automatically receive administrator rights and therefore be able to access the admin panel in the settings menu.
+To get started you need to register a user. The first user will automatically receive administrator rights and can access the read-only administration panel from the sidebar. Admin-only settings and user management remain under Settings.
 
 ## Backup
 

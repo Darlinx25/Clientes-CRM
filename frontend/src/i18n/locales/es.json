@@ -8,7 +8,8 @@
     "contacts": "Clientes",
     "timeline": "Línea de Tiempo",
     "settings": "Configuración",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "admin": "Administración"
   },
   "dashboard": {
     "welcome": "Bienvenido al Panel de Clientes",
@@ -436,6 +437,88 @@
     "fetch": "Obtener",
     "urlFetchError": "Error al obtener la imagen desde la URL"
   },
+  "admin": {
+    "title": "Administración",
+    "subtitle": "Vista de solo lectura del estado del sistema, los datos y los backups.",
+    "retry": "Reintentar",
+    "notAvailable": "—",
+    "tabs": {
+      "overview": "Resumen",
+      "data": "Datos",
+      "backups": "Backups"
+    },
+    "errors": {
+      "load": "No se pudo cargar el panel de administración.",
+      "forbidden": "No tienes permisos para acceder al panel de administración.",
+      "download": "No se pudo descargar el backup."
+    },
+    "reauth": {
+      "title": "Confirmar acceso",
+      "description": "Ingresa tu contraseña para abrir el panel de administración.",
+      "password": "Contraseña",
+      "unlock": "Abrir panel",
+      "unlocking": "Verificando...",
+      "cancel": "Volver a clientes",
+      "invalid": "La contraseña no es correcta."
+    },
+    "overview": {
+      "system": "Sistema",
+      "schema": "Esquema",
+      "schemaStatus": "Estado del esquema",
+      "upToDate": "Actualizado",
+      "pending": "Pendiente",
+      "dirty": "Migración incompleta",
+      "dirtyWarning": "La base quedó en una migración incompleta. No inicies la app hasta revisar el estado.",
+      "database": "Base de datos",
+      "wal": "Archivo WAL",
+      "backupDir": "Carpeta de backups",
+      "latestBackup": "Último backup",
+      "noBackups": "Sin backups",
+      "counts": "Datos",
+      "users": "Usuarios",
+      "contacts": "Clientes",
+      "archivedContacts": "Clientes archivados",
+      "deletedContacts": "Clientes eliminados",
+      "notes": "Notas",
+      "deletedNotes": "Notas eliminadas",
+      "activities": "Actividades",
+      "reminders": "Recordatorios",
+      "reminderCompletions": "Recordatorios completados",
+      "companies": "Empresas",
+      "relationships": "Relaciones",
+      "jobs": "Jobs programados",
+      "noJobs": "No hay jobs registrados.",
+      "lastRun": "Última ejecución",
+      "locked": "Bloqueo",
+      "notLocked": "Libre"
+    },
+    "data": {
+      "table": "Tabla",
+      "search": "Buscar",
+      "includeDeleted": "Incluir eliminados",
+      "empty": "No hay filas para mostrar.",
+      "yes": "Sí",
+      "no": "No",
+      "emptyValue": "—",
+      "rowsPerPage": "Filas por página"
+    },
+    "backups": {
+      "title": "Backups",
+      "description": "Estos archivos están en la carpeta de backups del servidor. Esta vista no crea, mueve ni borra backups.",
+      "folder": "Carpeta",
+      "empty": "Todavía no hay backups en la carpeta configurada.",
+      "filename": "Archivo",
+      "kind": "Tipo",
+      "size": "Tamaño",
+      "created": "Creado",
+      "download": "Descargar",
+      "kinds": {
+        "backup": "Backup completo",
+        "preUpgrade": "Pre-upgrade"
+      }
+    }
+  },
+
   "settings": {
     "title": "Configuración",
     "language": {
